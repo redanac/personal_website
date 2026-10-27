@@ -26,6 +26,11 @@ const HOVER_CONFIG = {
     spins: 1
 }
 
+const SELECT_CONFIG = {
+    toBaseDuration: 0.5,
+    returnDuration: 0.5
+}
+
 var FLOPPY_OPTIONS = {
     'PERSONAL_PROFILE': {name: 'Personal Profile', colour: '#ff0000'},
     'WORK_EXPERIENCE': {name: 'Work Experience', colour: '#00ff00'},
@@ -100,6 +105,8 @@ var robotPickupAnimation = null
 // list to track the 5 selectable floppy discs
 var selection_floppies = [] 
 const hoverHitAreas = []
+let basePose = null
+let insertPose = null
 
 /**
  * Labels
@@ -340,6 +347,7 @@ gltfLoader.load(
                 speed: 1 + (Math.random() - 0.5) * IDLE_CONFIG.speedJitter
             }
             floppyOption.userData.hover = { progress: 0 }
+            floppyOption.userData.select = { state: 'idle' }
             // change floppy colour to option colour
             // floppyOption.traverse((child) => {
             //     if (child.isMesh && !child.userData.isLabel) {
@@ -381,6 +389,15 @@ gltfLoader.load(
         }
 
         floppy.visible = false
+
+        const visualCentre = (object) => {
+            object.updateMatrixWorld(true)
+            return new THREE.Box3().setFromObject(object).getCenter(new THREE.Vector3())
+        }
+        // selection floppies pivot on their visual centre, so matching centres lines them up with these models
+        basePose = { position: visualCentre(floppy), rotY: floppy.rotation.y, rotZ: floppy.rotation.z }
+        // insertedFloppy's inner mesh is turned PI, so the selection floppy needs the same turn
+        insertPose = { position: visualCentre(insertedFloppy), rotY: insertedFloppy.rotation.y + Math.PI, rotZ: insertedFloppy.rotation.z }
         
         // var outlineMaterial = new THREE.MeshBasicMaterial({ color: 'red', side: THREE.BackSide })
         // var outlineMesh = new THREE.Mesh(floppy.children[0].geometry, outlineMaterial)
@@ -541,11 +558,12 @@ const updateHoveredFloppy = () => {
     let next = null
     if (pointerInside) {
         raycaster.setFromCamera(pointer, camera)
+        const isIdle = (f) => f.userData.select.state === 'idle'
         // the focused floppy can cover other slots, so it keeps priority while under the cursor
-        if (hoveredFloppy && raycaster.intersectObject(hoveredFloppy, true).length) {
+        if (hoveredFloppy && isIdle(hoveredFloppy) && raycaster.intersectObject(hoveredFloppy, true).length) {
             next = hoveredFloppy
         } else {
-            const hitArea = raycaster.intersectObjects(hoverHitAreas, false)[0]
+            const hitArea = raycaster.intersectObjects(hoverHitAreas.filter((h) => isIdle(h.userData.floppy)), false)[0]
             next = hitArea ? hitArea.object.userData.floppy : null
         }
     }
@@ -554,6 +572,107 @@ const updateHoveredFloppy = () => {
 }
 
 const easeInOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
+
+/**
+ * Selection
+ */
+
+const tweens = new Map()
+
+const startTween = (object, toPose, duration, onComplete) => {
+    // drop whole turns (e.g. the hover spin) so it doesn't unwind on the way
+    const turns = Math.round((object.rotation.y - toPose.rotY) / (Math.PI * 2))
+    tweens.set(object, {
+        fromPos: object.position.clone(),
+        toPos: toPose.position.clone(),
+        fromRotY: object.rotation.y - turns * Math.PI * 2,
+        toRotY: toPose.rotY,
+        fromRotZ: object.rotation.z,
+        toRotZ: toPose.rotZ,
+        progress: 0,
+        duration,
+        onComplete
+    })
+}
+
+const updateTweens = (deltaTime) => {
+    tweens.forEach((tween, object) => {
+        tween.progress = Math.min(1, tween.progress + deltaTime / tween.duration)
+        const e = easeInOutCubic(tween.progress)
+        object.position.lerpVectors(tween.fromPos, tween.toPos, e)
+        object.rotation.y = THREE.MathUtils.lerp(tween.fromRotY, tween.toRotY, e)
+        object.rotation.z = THREE.MathUtils.lerp(tween.fromRotZ, tween.toRotZ, e)
+        if (tween.progress === 1) {
+            tweens.delete(object)
+            if (tween.onComplete) tween.onComplete()
+        }
+    })
+}
+
+const restPose = (selectionFloppy) => {
+    const idle = selectionFloppy.userData.idle
+    return { position: new THREE.Vector3(idle.baseX, idle.baseY, idle.baseZ), rotY: idle.baseRotY, rotZ: idle.baseRotZ }
+}
+
+let selectedFloppy = null
+let pendingFloppy = null
+let returningFloppy = null
+let selectionBusy = false
+
+const beginSelecting = (selectionFloppy) => {
+    selectionFloppy.userData.select.state = 'selecting'
+    startTween(selectionFloppy, basePose, SELECT_CONFIG.toBaseDuration, () => {
+        setChosenLabel(selectionFloppy.name)
+        selectionFloppy.visible = false
+        selectionFloppy.userData.select.state = 'hidden'
+        selectedFloppy = selectionFloppy
+        selectionBusy = false
+        playAnimation()
+    })
+}
+
+const selectFloppy = (next) => {
+    selectionBusy = true
+
+    if (!selectedFloppy) {
+        beginSelecting(next)
+        return
+    }
+
+    const previous = selectedFloppy
+    selectedFloppy = null
+    next.userData.select.state = 'pending'
+    pendingFloppy = next
+
+    if (robotPickupAnimation) robotPickupAnimation.stop()
+    animationPlaying = false
+    ;[floppy, movingFloppy, insertedFloppy].forEach((f) => { f.visible = false })
+
+    previous.position.copy(insertPose.position)
+    previous.rotation.y = insertPose.rotY
+    previous.rotation.z = insertPose.rotZ
+    previous.visible = true
+    previous.userData.select.state = 'returning'
+    returningFloppy = previous
+    startTween(previous, restPose(previous), SELECT_CONFIG.returnDuration, () => {
+        previous.userData.select.state = 'idle'
+        previous.userData.hover.progress = 0
+        returningFloppy = null
+    })
+}
+
+// the pending floppy eases back to its slot via the idle/hover code before it starts
+const updatePending = () => {
+    if (pendingFloppy && !returningFloppy && pendingFloppy.userData.hover.progress === 0) {
+        const next = pendingFloppy
+        pendingFloppy = null
+        beginSelecting(next)
+    }
+}
+
+canvas.addEventListener('click', () => {
+    if (hoveredFloppy && !selectionBusy) selectFloppy(hoveredFloppy)
+})
 
 const idlePosition = new THREE.Vector3()
 const focusPosition = new THREE.Vector3()
@@ -564,6 +683,9 @@ const updateIdleFloppies = (elapsedTime, deltaTime) =>
     focusPosition.multiplyScalar(HOVER_CONFIG.focusDistance).add(camera.position)
 
     selection_floppies.forEach((selectionFloppy) => {
+        const state = selectionFloppy.userData.select.state
+        if (state !== 'idle' && state !== 'pending') return
+
         const idle = selectionFloppy.userData.idle
         const hover = selectionFloppy.userData.hover
         const t = elapsedTime * idle.speed + idle.phase
@@ -574,7 +696,7 @@ const updateIdleFloppies = (elapsedTime, deltaTime) =>
         const idleRotZ = idle.baseRotZ + Math.sin(t * 0.9 + 1) * IDLE_CONFIG.tiltAmplitude
 
         // stepping progress (not restarting a tween) lets a reversal start from the current pose
-        const direction = selectionFloppy === hoveredFloppy ? 1 : -1
+        const direction = state === 'idle' && selectionFloppy === hoveredFloppy ? 1 : -1
         hover.progress = THREE.MathUtils.clamp(hover.progress + direction * deltaTime / HOVER_CONFIG.duration, 0, 1)
         const e = easeInOutCubic(hover.progress)
 
@@ -608,7 +730,9 @@ const tick = () =>
     }
 
     updateHoveredFloppy()
+    updateTweens(deltaTime)
     updateIdleFloppies(elapsedTime, deltaTime)
+    updatePending()
 
     // Render
     renderer.render(scene, camera)
