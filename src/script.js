@@ -112,6 +112,19 @@ scene.add(ambientLight)
  * Models
  */
 
+const cubeGeometry = new THREE.BoxGeometry(15, 10, 15)
+const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0xd4d0c8 })
+const cube = new THREE.Mesh(cubeGeometry, cubeMaterial)
+cube.position.set(0, -5, 4)
+scene.add(cube)
+
+// add black hole on top for visual effect of floppy insertion
+const insertHoleGeometry = new THREE.BoxGeometry(2.0, 0.1, 0.2)
+const insertHoleMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 })
+const insertHole = new THREE.Mesh(insertHoleGeometry, insertHoleMaterial)
+insertHole.position.set(0, 0, 6)
+scene.add(insertHole)
+
 var floppy = null
 var movingFloppy = null
 var insertedFloppy = null
