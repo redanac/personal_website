@@ -20,6 +20,12 @@ const IDLE_CONFIG = {
     speedJitter: 0.25
 }
 
+const HOVER_CONFIG = {
+    duration: 0.5,
+    focusDistance: 2,
+    spins: 1
+}
+
 var FLOPPY_OPTIONS = {
     'PERSONAL_PROFILE': {name: 'Personal Profile', colour: '#ff0000'},
     'WORK_EXPERIENCE': {name: 'Work Experience', colour: '#00ff00'},
@@ -93,6 +99,7 @@ var mixer = null
 var robotPickupAnimation = null
 // list to track the 5 selectable floppy discs
 var selection_floppies = [] 
+const hoverHitAreas = []
 
 /**
  * Labels
@@ -311,15 +318,28 @@ gltfLoader.load(
             floppyOption.position.y = SELECTION_FLOPPY_Y_OFFSET
             floppyOption.position.x = index * SELECTION_FLOPPY_SPACING 
             floppyOption.name = option.name
+
+            // the model sits ~6 below its origin, so re-pivot on its visual centre for spins and focus (rest pose unchanged)
+            floppyOption.updateMatrixWorld(true)
+            const visualCenter = new THREE.Box3().setFromObject(floppyOption).getCenter(new THREE.Vector3())
+            const localCenter = floppyOption.worldToLocal(visualCenter.clone())
+            floppyOption.children.forEach((child) => child.position.sub(localCenter))
+            const pivotX = visualCenter.x - floppyOption.position.x
+            floppyOption.position.copy(visualCenter)
+
             // plain numbers because userData is JSON-copied on clone()
             floppyOption.userData.idle = {
+                pivotX,
+                baseX: floppyOption.position.x,
                 baseY: floppyOption.position.y,
+                baseZ: floppyOption.position.z,
                 baseRotX: floppyOption.rotation.x,
                 baseRotY: floppyOption.rotation.y,
                 baseRotZ: floppyOption.rotation.z,
                 phase: Math.random() * Math.PI * 2,
                 speed: 1 + (Math.random() - 0.5) * IDLE_CONFIG.speedJitter
             }
+            floppyOption.userData.hover = { progress: 0 }
             // change floppy colour to option colour
             // floppyOption.traverse((child) => {
             //     if (child.isMesh && !child.userData.isLabel) {
@@ -330,6 +350,17 @@ gltfLoader.load(
 
 
             addLabel(floppyOption, option.name)
+
+            // stays at the rest slot so the floppy keeps hover after it moves out from under the cursor
+            const box = new THREE.Box3().setFromObject(floppyOption)
+            const hitArea = new THREE.Mesh(
+                new THREE.BoxGeometry(...box.getSize(new THREE.Vector3()).toArray()),
+                new THREE.MeshBasicMaterial({ visible: false })
+            )
+            hitArea.userData.offset = box.getCenter(new THREE.Vector3()).sub(floppyOption.position).toArray()
+            hitArea.userData.floppy = floppyOption
+            scene.add(hitArea)
+            hoverHitAreas.push(hitArea)
             scene.add(floppyOption)
             selection_floppies.push(floppyOption)
         })
@@ -343,9 +374,9 @@ gltfLoader.load(
         {
             const firstSelectionFloppy = selection_floppies[0]
             const selectionFloppyFolder = gui.addFolder('Selection Floppy')
-            selectionFloppyFolder.add(firstSelectionFloppy.position, 'x', -10, 10)
+            selectionFloppyFolder.add(firstSelectionFloppy.userData.idle, 'baseX', -10, 10).name('x')
             selectionFloppyFolder.add(firstSelectionFloppy.userData.idle, 'baseY', -10, 10).name('y')
-            selectionFloppyFolder.add(firstSelectionFloppy.position, 'z', -10, 10)
+            selectionFloppyFolder.add(firstSelectionFloppy.userData.idle, 'baseZ', -10, 10).name('z')
             selectionFloppyFolder.add({spacing: SELECTION_FLOPPY_SPACING}, 'spacing', 0, 10).onChange(editFloppySpacing)
         }
 
@@ -381,7 +412,7 @@ const gui = new GUI()
 
 const editFloppySpacing = (spacing) => {
             selection_floppies.forEach((floppy, index) => {
-                floppy.position.x = index * spacing
+                floppy.userData.idle.baseX = index * spacing + floppy.userData.idle.pivotX
             })
         }
 
@@ -402,6 +433,10 @@ animationFolder.add(
     'label',
     Object.values(FLOPPY_OPTIONS).map((option) => option.name)
 ).onChange(setChosenLabel)
+
+const hoverFolder = gui.addFolder('Hover')
+hoverFolder.add(HOVER_CONFIG, 'duration', 0.1, 3, 0.05)
+hoverFolder.add(HOVER_CONFIG, 'focusDistance', 0.5, 10, 0.1)
 
 const idleFolder = gui.addFolder('Idle')
 idleFolder.add(IDLE_CONFIG, 'bobAmplitude', 0, 1, 0.01)
@@ -476,15 +511,76 @@ const pauseAnimation = () =>
 }
 
 
-const updateIdleFloppies = (elapsedTime) =>
+/**
+ * Hover
+ */
+
+const raycaster = new THREE.Raycaster()
+const pointer = new THREE.Vector2()
+let pointerInside = false
+let hoveredFloppy = null
+
+canvas.addEventListener('pointermove', (event) => {
+    const rect = canvas.getBoundingClientRect()
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+    pointerInside = true
+})
+
+canvas.addEventListener('pointerleave', () => {
+    pointerInside = false
+})
+
+const updateHoveredFloppy = () => {
+    hoverHitAreas.forEach((hitArea) => {
+        const idle = hitArea.userData.floppy.userData.idle
+        const [ox, oy, oz] = hitArea.userData.offset
+        hitArea.position.set(idle.baseX + ox, idle.baseY + oy, idle.baseZ + oz)
+    })
+
+    let next = null
+    if (pointerInside) {
+        raycaster.setFromCamera(pointer, camera)
+        // the focused floppy can cover other slots, so it keeps priority while under the cursor
+        if (hoveredFloppy && raycaster.intersectObject(hoveredFloppy, true).length) {
+            next = hoveredFloppy
+        } else {
+            const hitArea = raycaster.intersectObjects(hoverHitAreas, false)[0]
+            next = hitArea ? hitArea.object.userData.floppy : null
+        }
+    }
+    hoveredFloppy = next
+    canvas.style.cursor = hoveredFloppy ? 'pointer' : 'default'
+}
+
+const easeInOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
+
+const idlePosition = new THREE.Vector3()
+const focusPosition = new THREE.Vector3()
+
+const updateIdleFloppies = (elapsedTime, deltaTime) =>
 {
+    camera.getWorldDirection(focusPosition)
+    focusPosition.multiplyScalar(HOVER_CONFIG.focusDistance).add(camera.position)
+
     selection_floppies.forEach((selectionFloppy) => {
         const idle = selectionFloppy.userData.idle
+        const hover = selectionFloppy.userData.hover
         const t = elapsedTime * idle.speed + idle.phase
-        selectionFloppy.position.y = idle.baseY + Math.sin(t * IDLE_CONFIG.bobSpeed) * IDLE_CONFIG.bobAmplitude
+
+        idlePosition.set(idle.baseX, idle.baseY + Math.sin(t * IDLE_CONFIG.bobSpeed) * IDLE_CONFIG.bobAmplitude, idle.baseZ)
         // different frequencies so bob, sway and tilt never line up
-        selectionFloppy.rotation.y = idle.baseRotY + Math.sin(t * 0.7) * IDLE_CONFIG.swayAmplitude
-        selectionFloppy.rotation.z = idle.baseRotZ + Math.sin(t * 0.9 + 1) * IDLE_CONFIG.tiltAmplitude
+        const idleRotY = idle.baseRotY + Math.sin(t * 0.7) * IDLE_CONFIG.swayAmplitude
+        const idleRotZ = idle.baseRotZ + Math.sin(t * 0.9 + 1) * IDLE_CONFIG.tiltAmplitude
+
+        // stepping progress (not restarting a tween) lets a reversal start from the current pose
+        const direction = selectionFloppy === hoveredFloppy ? 1 : -1
+        hover.progress = THREE.MathUtils.clamp(hover.progress + direction * deltaTime / HOVER_CONFIG.duration, 0, 1)
+        const e = easeInOutCubic(hover.progress)
+
+        selectionFloppy.position.lerpVectors(idlePosition, focusPosition, e)
+        selectionFloppy.rotation.y = THREE.MathUtils.lerp(idleRotY, idle.baseRotY, e) + e * Math.PI * 2 * HOVER_CONFIG.spins
+        selectionFloppy.rotation.z = THREE.MathUtils.lerp(idleRotZ, idle.baseRotZ, e)
     })
 }
 
@@ -511,7 +607,8 @@ const tick = () =>
         }
     }
 
-    updateIdleFloppies(elapsedTime)
+    updateHoveredFloppy()
+    updateIdleFloppies(elapsedTime, deltaTime)
 
     // Render
     renderer.render(scene, camera)
