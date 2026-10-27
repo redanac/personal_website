@@ -7,6 +7,17 @@ import GUI from 'lil-gui'
 
 var paused = false
 
+const PICK_UP_TIME = 2.335
+const INSERT_TIME = 6.639
+
+var FLOPPY_OPTIONS = {
+    'PERSONAL_PROFILE': 'Personal Profile',
+    'WORK_EXPERIENCE': 'Work Experience',
+    'PROJECTS': 'Projects',
+    'LINKS': 'Links',
+    'CONTACT': 'Contact'
+}
+
 // get the screen height of the device not the window
 const screenHeight = window.screen.height
 
@@ -14,6 +25,7 @@ console.log(screenHeight)
 console.log(window.innerHeight)
 
 const canvasHeight = screenHeight / 2.0
+const insertedFloppyPosition = new THREE.Vector3(6.19,-1.12,6)
 
 // keep width consistent with window size but fix height to 1/3 of screen height
 const sizes = {
@@ -54,10 +66,10 @@ scene.add(light)
 const ambientLight = new THREE.AmbientLight(0xffffff, 1)
 scene.add(ambientLight)
 
-/** Controls */
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
-//controls.update()
+// /** Controls */
+// const controls = new OrbitControls(camera, canvas)
+// controls.enableDamping = true
+// //controls.update()
 
 /**
  * Models
@@ -65,6 +77,7 @@ controls.enableDamping = true
 
 var floppy = null
 var movingFloppy = null
+var insertedFloppy = null
 var robotArm = null
 var mixer = null
 var robotPickupAnimation = null
@@ -83,6 +96,11 @@ gltfLoader.load(
 
         mixer = new THREE.AnimationMixer(robotArm)
         robotPickupAnimation = mixer.clipAction(gltf.animations[0])
+
+        mixer.addEventListener('finished', () => {
+        animationPlaying = false
+        console.log('animation finished')
+})
 
     },
     (progress) =>
@@ -105,6 +123,14 @@ gltfLoader.load(
         scene.add(floppy)
 
         movingFloppy = floppy.clone()
+        
+        // create another floppy instance for insertion
+        insertedFloppy = floppy.clone()
+        insertedFloppy.children[0].rotateOnAxis(new THREE.Vector3(0, 1, 0), Math.PI)
+        insertedFloppy.position.copy(insertedFloppyPosition)
+        scene.add(insertedFloppy)
+        insertedFloppy.visible = false
+
         //scene.add(movingFloppy)
         movingFloppy.children[0].position.set(0.2,-2.15, 0.05)
 
@@ -118,6 +144,15 @@ gltfLoader.load(
         console.log('Cylinder005', cylinder005)
 
         cylinder005.add(movingFloppy)
+        movingFloppy.visible = false
+
+        if(insertedFloppy)
+        {
+            const insertedFloppyFolder = gui.addFolder('Inserted Floppy')
+            insertedFloppyFolder.add(insertedFloppy.position, 'x', -10, 10)
+            insertedFloppyFolder.add(insertedFloppy.position, 'y', -10, 10)
+            insertedFloppyFolder.add(insertedFloppy.position, 'z', -10, 10)
+        }
 
         // var outlineMaterial = new THREE.MeshBasicMaterial({ color: 'red', side: THREE.BackSide })
         // var outlineMesh = new THREE.Mesh(floppy.children[0].geometry, outlineMaterial)
@@ -141,10 +176,6 @@ gltfLoader.load(
     }
 )
 
-
-
-
-
 /**
  * Debug
  */
@@ -162,6 +193,7 @@ const animationFolder = gui.addFolder('Animations')
 // add button to play animation
 animationFolder.add({play: () => playAnimation()}, 'play')
 animationFolder.add({pause: () => pauseAnimation()}, 'pause')
+
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -181,9 +213,15 @@ camera.position.set(0, 2.8, 9.7)
 const clock = new THREE.Clock()
 let previousTime = 0
 
+var animationPlaying = false
+
 const playAnimation = (loop = false) =>
 {
     if(!robotPickupAnimation) return
+
+    movingFloppy.visible = false
+    insertedFloppy.visible = false
+    floppy.visible = true
 
     if(paused){
         paused = false
@@ -197,6 +235,9 @@ const playAnimation = (loop = false) =>
     }
 
     robotPickupAnimation.play().reset()
+    animationPlaying = true
+    console.log('playAnimation called')
+
     paused = false
 }
 
@@ -205,9 +246,11 @@ const pauseAnimation = () =>
     if(robotPickupAnimation)
     {
         paused = true
+        animationPlaying = false    
         //robotPickupAnimation.stop()
     }
 }
+
 
 const tick = () =>
 {
@@ -221,6 +264,14 @@ const tick = () =>
         if(!paused)
         {
             mixer.update(deltaTime)
+            if (robotPickupAnimation && floppy && movingFloppy && insertedFloppy)
+            {
+                const time = robotPickupAnimation.time
+
+                floppy.visible = time < PICK_UP_TIME
+                movingFloppy.visible = time >= PICK_UP_TIME && time < INSERT_TIME
+                insertedFloppy.visible = time >= INSERT_TIME
+            }
         }
     }
 
