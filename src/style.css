@@ -17,6 +17,8 @@ html, body {
 }
 
 body {
+    position: relative;
+    min-height: 100vh;
     background: var(--desktop);
     color: var(--terminal-fg);
     font-family: 'JetBrains Mono', monospace;
@@ -30,9 +32,9 @@ body {
 
 /* Desktop icons */
 
-/* full-viewport layer so icons can be dragged anywhere; only the icons take pointer events */
+/* covers the whole page (not just the viewport) so icons stay put on the desktop as you scroll */
 .desktop-icons {
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: 10;
     pointer-events: none;
@@ -118,6 +120,25 @@ body {
     color: #fff;
     font-weight: 700;
     font-size: 0.8rem;
+}
+
+[data-drag] > .title-bar {
+    cursor: url('/cursors/arrow.svg') 1 1, default;
+    touch-action: none;
+    user-select: none;
+}
+
+.window[data-drag="page"] {
+    position: relative;
+    z-index: 5;
+}
+
+.window.blocked {
+    opacity: 0.6;
+}
+
+.window.returning {
+    transition: transform 0.2s ease-out;
 }
 
 .title-bar-text {
@@ -219,10 +240,15 @@ canvas.webgl {
     opacity: 0;
 }
 
+/* smaller than the screen so there's room to drag it around */
 .screen-window {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    width: calc(100% - 8rem);
+    height: calc(100% - 8rem);
     display: flex;
     flex-direction: column;
-    height: 100%;
     box-sizing: border-box;
     margin-bottom: 0;
 }

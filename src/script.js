@@ -668,6 +668,7 @@ let monitorToken = 0
 const buildScreenWindow = (option, html) => {
     const win = document.createElement('div')
     win.className = 'window screen-window'
+    win.dataset.drag = 'screen'
 
     const titleBar = document.createElement('div')
     titleBar.className = 'title-bar'

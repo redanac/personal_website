@@ -4,26 +4,27 @@ const ICON_SPACING = 80
 const DRAG_THRESHOLD = 4
 
 const icons = [...document.querySelectorAll('.desktop-icon')]
+const iconLayer = document.querySelector('.desktop-icons')
 const noDropZones = [document.querySelector('canvas.webgl'), document.getElementById('monitor')]
 
-const isOverNoDropZone = (icon) => {
-    const a = icon.getBoundingClientRect()
+const isOverNoDropZone = (element) => {
+    const a = element.getBoundingClientRect()
     return noDropZones.some((zone) => {
         const b = zone.getBoundingClientRect()
         return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
     })
 }
 
-const clampToViewport = (icon, left, top) => {
-    icon.style.left = `${Math.min(Math.max(0, left), window.innerWidth - icon.offsetWidth)}px`
-    icon.style.top = `${Math.min(Math.max(0, top), window.innerHeight - icon.offsetHeight)}px`
+const clampToLayer = (icon, left, top) => {
+    icon.style.left = `${Math.min(Math.max(0, left), iconLayer.clientWidth - icon.offsetWidth)}px`
+    icon.style.top = `${Math.min(Math.max(0, top), iconLayer.clientHeight - icon.offsetHeight)}px`
 }
 
 const perColumn = Math.max(1, Math.floor((window.innerHeight - ICON_MARGIN * 2) / ICON_SPACING))
 icons.forEach((icon, index) => {
     const column = Math.floor(index / perColumn)
     const row = index % perColumn
-    clampToViewport(icon, ICON_MARGIN + column * ICON_SPACING * 1.1, ICON_MARGIN + row * ICON_SPACING)
+    clampToLayer(icon, ICON_MARGIN + column * ICON_SPACING * 1.1, ICON_MARGIN + row * ICON_SPACING)
 })
 
 icons.forEach((icon) => {
@@ -43,7 +44,7 @@ icons.forEach((icon) => {
         if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
         drag.moved = true
         icon.classList.add('dragging')
-        clampToViewport(icon, drag.left + dx, drag.top + dy)
+        clampToLayer(icon, drag.left + dx, drag.top + dy)
         icon.classList.toggle('blocked', isOverNoDropZone(icon))
     })
 
@@ -63,5 +64,60 @@ icons.forEach((icon) => {
 
 // read from style, not offsetLeft/Top, which are 0 while the icons are hidden on narrow screens
 window.addEventListener('resize', () => {
-    icons.forEach((icon) => clampToViewport(icon, parseFloat(icon.style.left), parseFloat(icon.style.top)))
+    icons.forEach((icon) => clampToLayer(icon, parseFloat(icon.style.left), parseFloat(icon.style.top)))
+})
+
+/**
+ * Windows: dragged by the title bar using a transform, so they keep their space in the page layout.
+ * data-drag="page": anywhere in the viewport except the canvas/monitor. data-drag="screen": inside its parent.
+ */
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+
+const getOffset = (win) => ({ x: parseFloat(win.dataset.dx || 0), y: parseFloat(win.dataset.dy || 0) })
+
+const setOffset = (win, x, y) => {
+    win.dataset.dx = x
+    win.dataset.dy = y
+    win.style.transform = `translate(${x}px, ${y}px)`
+}
+
+// delegated because the monitor's window is recreated each time a floppy loads
+document.addEventListener('pointerdown', (event) => {
+    const handle = event.target.closest('.title-bar')
+    const win = handle && handle.closest('[data-drag]')
+    if (!win || event.button !== 0) return
+
+    event.preventDefault()
+    handle.setPointerCapture(event.pointerId)
+
+    const isPage = win.dataset.drag === 'page'
+    const start = getOffset(win)
+    const startRect = win.getBoundingClientRect()
+    const bounds = isPage
+        ? { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }
+        : win.parentElement.getBoundingClientRect()
+
+    const move = (moveEvent) => {
+        const dx = clamp(moveEvent.clientX - event.clientX, bounds.left - startRect.left, bounds.right - startRect.right)
+        const dy = clamp(moveEvent.clientY - event.clientY, bounds.top - startRect.top, bounds.bottom - startRect.bottom)
+        setOffset(win, start.x + dx, start.y + dy)
+        if (isPage) win.classList.toggle('blocked', isOverNoDropZone(win))
+    }
+
+    const end = () => {
+        handle.removeEventListener('pointermove', move)
+        handle.removeEventListener('pointerup', end)
+        handle.removeEventListener('pointercancel', end)
+        if (isPage && isOverNoDropZone(win)) {
+            win.classList.add('returning')
+            win.addEventListener('transitionend', () => win.classList.remove('returning'), { once: true })
+            setOffset(win, start.x, start.y)
+        }
+        win.classList.remove('blocked')
+    }
+
+    handle.addEventListener('pointermove', move)
+    handle.addEventListener('pointerup', end)
+    handle.addEventListener('pointercancel', end)
 })
