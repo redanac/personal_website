@@ -32,12 +32,24 @@ const SELECT_CONFIG = {
 }
 
 var FLOPPY_OPTIONS = {
-    'PERSONAL_PROFILE': {name: 'Personal Profile', colour: '#ff0000'},
-    'WORK_EXPERIENCE': {name: 'Work Experience', colour: '#00ff00'},
-    'PROJECTS': {name: 'Projects', colour: '#0000ff'},
-    'LINKS': {name: 'Links', colour: '#ffff00'},
-    'CONTACT': {name: 'Contact', colour: '#ff00ff'}
+    'PERSONAL_PROFILE': {name: 'Personal Profile', colour: '#ff0000', file: './screens/personal-profile.html'},
+    'WORK_EXPERIENCE': {name: 'Work Experience', colour: '#00ff00', file: './screens/work-experience.html'},
+    'PROJECTS': {name: 'Projects', colour: '#0000ff', file: './screens/projects.html'},
+    'LINKS': {name: 'Links', colour: '#ffff00', file: './screens/links.html'},
+    'CONTACT': {name: 'Contact', colour: '#ff00ff', file: './screens/contact.html'}
 }
+
+// each screen becomes its own chunk, loaded on demand as a raw string
+const screenLoaders = import.meta.glob('./screens/*.html', { query: '?raw', import: 'default' })
+
+// loaded up front; content is a promise so monitorOn can await it if it isn't ready yet
+Object.values(FLOPPY_OPTIONS).forEach((option) => {
+    const load = screenLoaders[option.file]
+    option.content = (load ? load() : Promise.reject(new Error(`${option.file}: not found`))).catch((error) => {
+        console.error(error)
+        return `<p>&gt; ERROR: could not load ${option.name}</p>`
+    })
+})
 
 // get the screen height of the device not the window
 const screenHeight = window.screen.height
@@ -326,11 +338,12 @@ gltfLoader.load(
         }
 
         // Iterate through each entry in FLOPPY_OPTIONS and create a selection floppy
-        Object.values(FLOPPY_OPTIONS).forEach((option, index) => {
+        Object.entries(FLOPPY_OPTIONS).forEach(([optionKey, option], index) => {
             const floppyOption = floppy.clone()
             floppyOption.position.y = SELECTION_FLOPPY_Y_OFFSET
             floppyOption.position.x = index * SELECTION_FLOPPY_SPACING 
             floppyOption.name = option.name
+            floppyOption.userData.optionKey = optionKey
 
             // the model sits ~6 below its origin, so re-pivot on its visual centre for spins and focus (rest pose unchanged)
             floppyOption.updateMatrixWorld(true)
@@ -632,11 +645,17 @@ let selectionBusy = false
 const monitorScreen = document.getElementById('monitor-screen')
 const screenContent = document.getElementById('screen-content')
 const powerLed = document.getElementById('power-led')
-// name to show once the robot has inserted the floppy
-let monitorPendingName = null
+// option to show once the robot has inserted the floppy
+let monitorPendingOption = null
+// bumped on every on/off so a slow fetch can't switch the screen on after it was turned off
+let monitorToken = 0
 
-const monitorOn = (name) => {
-    screenContent.textContent = `> LOADING ${name.toUpperCase()}...\n\n${name}`
+const monitorOn = async (option) => {
+    const token = ++monitorToken
+    const html = await option.content
+    if (token !== monitorToken) return
+
+    screenContent.innerHTML = html
     monitorScreen.classList.remove('turning-off', 'is-on')
     monitorScreen.classList.add('turning-on')
     powerLed.classList.add('is-on')
@@ -647,6 +666,7 @@ const monitorOn = (name) => {
 }
 
 const monitorOff = () => {
+    monitorToken++
     if (!monitorScreen.classList.contains('is-on') && !monitorScreen.classList.contains('turning-on')) return
     monitorScreen.classList.remove('turning-on', 'is-on')
     monitorScreen.classList.add('turning-off')
@@ -654,15 +674,15 @@ const monitorOff = () => {
     monitorScreen.addEventListener('animationend', () => {
         if (!monitorScreen.classList.contains('turning-off')) return
         monitorScreen.classList.remove('turning-off')
-        screenContent.textContent = ''
+        screenContent.innerHTML = ''
     }, { once: true })
 }
 
 const checkMonitorInsert = (finished = false) => {
-    if (!monitorPendingName || !robotPickupAnimation) return
+    if (!monitorPendingOption || !robotPickupAnimation) return
     if (finished || robotPickupAnimation.time >= INSERT_TIME) {
-        monitorOn(monitorPendingName)
-        monitorPendingName = null
+        monitorOn(monitorPendingOption)
+        monitorPendingOption = null
     }
 }
 
@@ -674,7 +694,7 @@ const beginSelecting = (selectionFloppy) => {
         selectionFloppy.userData.select.state = 'hidden'
         selectedFloppy = selectionFloppy
         selectionBusy = false
-        monitorPendingName = selectionFloppy.name
+        monitorPendingOption = FLOPPY_OPTIONS[selectionFloppy.userData.optionKey]
         playAnimation()
     })
 }
@@ -694,7 +714,7 @@ const selectFloppy = (next) => {
 
     if (robotPickupAnimation) robotPickupAnimation.stop()
     animationPlaying = false
-    monitorPendingName = null
+    monitorPendingOption = null
     monitorOff()
     ;[floppy, movingFloppy, insertedFloppy].forEach((f) => { f.visible = false })
 

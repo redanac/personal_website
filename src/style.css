@@ -78,8 +78,16 @@ canvas.webgl {
     padding: 2rem;
     color: #9dffb0;
     background: radial-gradient(ellipse at center, #0f2a14 0%, #071108 80%);
-    white-space: pre-wrap;
+    overflow-y: auto;
     opacity: 0;
+}
+
+.screen-content h2 {
+    margin-top: 0;
+}
+
+.screen-content a {
+    color: #33ff66;
 }
 
 .monitor-screen.is-on .screen-content {
