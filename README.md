@@ -1,44 +1,12 @@
-# personal_website
+# Redha Nacef Personal Website
 
-## Responsive layout
+## Summary
+This repo is a personal website showing some information about myself. It's built with Vite and uses Threejs for the robotic arm animation and the floppy disc visualisation and selection logic. The JS and HTML is found in the src folder, while images, icons, models etc are in the static folder. The following list summarises the main script files:
+ * The `script.js` file contains the logic for the threejs scene, including setting up the scene, loading and animating all the 3D models and handling the interaction logic.
+ * The `index.html` file is the entry point and contains the main html for the webpage. The Threjs scene is rendered inside the canvas object
+ * The `desktop.js` script handles the logic for the desktop icons and the header window. It also handles the setting window and the credits window.
+ * The `screens` folder holds several html files that deal with the content on each section 'stored' on the floppy disks. 
 
-The canvas and monitor adapt to the viewport height, with smaller padding on
-narrow screens. A `ResizeObserver` keeps the Three.js drawing buffer matched to
-the canvas's CSS content size, and the camera preserves the floppy row's
-horizontal framing on narrow windows. Dragged windows return to their original
-positions when the viewport is resized so they remain accessible.
-The central column has an 852px maximum outer width and reserves 104px on each
-side for desktop icons at viewport widths of 600px and above. Icons reflow on
-resize to avoid the content column. Below 600px, icons are hidden and the content
-uses the full width.
+## How to run locally
+To run this repo locally simply clone the repo and run `npm install` followed by `npm run dev`
 
-Run `npm run dev` for local development or `npm run build` for a production build.
-
-## Profile portrait
-
-The personal profile screen uses `static/portrait.png`. The browser downsamples
-it to 72 pixels wide, then CSS scales it up with `image-rendering: pixelated`
-for a retro portrait. The original image is left unchanged, and the portrait
-stacks above the introduction when the screen window is narrow.
-
-## Credits
-
-Click the `credits.txt` desktop icon to open a draggable Notepad-style window
-above the page. Close it with its X button or Escape. Edit `src/credits.txt` to
-add asset names, creators, source links, licenses, and any modifications.
-The icon follows the desktop's visibility rules (600px and wider).
-
-## Animation settings
-
-Double-click the Settings desktop icon (or activate it with the keyboard) to
-open a draggable settings window. Close the window with its X button or Escape.
-Like the other desktop icons, Settings is visible at widths of 600px and above.
-
-- **Skip robot animation:** on the next disc selection, the disc tweens from
-  its clicked hover position to above the drive slot, then slides vertically
-  into it. It holds its hover position while the previous disc returns.
-  The screen opens after insertion.
-- **Robot animation speed:** adjusts robot playback immediately from 0.5x to 2x.
-  The slider is disabled while skipping is enabled; its value is retained.
-
-Robot animation is enabled at 1x by default. Settings last until the page reloads.
