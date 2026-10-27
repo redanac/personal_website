@@ -650,12 +650,36 @@ let monitorPendingOption = null
 // bumped on every on/off so a slow fetch can't switch the screen on after it was turned off
 let monitorToken = 0
 
+const buildScreenWindow = (option, html) => {
+    const win = document.createElement('div')
+    win.className = 'window screen-window'
+
+    const titleBar = document.createElement('div')
+    titleBar.className = 'title-bar'
+    const titleText = document.createElement('span')
+    titleText.className = 'title-bar-text'
+    const fileName = option.file.split('/').pop().replace('.html', '.txt').toUpperCase()
+    titleText.textContent = `MS-DOS Prompt - TYPE ${fileName}`
+    const controls = document.createElement('div')
+    controls.className = 'title-bar-controls'
+    controls.setAttribute('aria-hidden', 'true')
+    controls.innerHTML = '<span>_</span><span>&#9633;</span><span>&times;</span>'
+    titleBar.append(titleText, controls)
+
+    const body = document.createElement('div')
+    body.className = 'window-body terminal'
+    body.innerHTML = html
+
+    win.append(titleBar, body)
+    return win
+}
+
 const monitorOn = async (option) => {
     const token = ++monitorToken
     const html = await option.content
     if (token !== monitorToken) return
 
-    screenContent.innerHTML = html
+    screenContent.replaceChildren(buildScreenWindow(option, html))
     monitorScreen.classList.remove('turning-off', 'is-on')
     monitorScreen.classList.add('turning-on')
     powerLed.classList.add('is-on')
