@@ -4,11 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redha Nacef Personal Website</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <h1>Redha Nacef's Personal Website</h1>
-    <canvas class="webgl"></canvas>
+    <main class="page">
+        <h1>Redha Nacef's Personal Website</h1>
+        <p class="instructions">
+            &gt; Hover over a floppy disk to take a closer look. Click one to load it.<span class="cursor">_</span>
+        </p>
+        <canvas class="webgl"></canvas>
+        <section class="monitor" id="monitor">
+            <div class="monitor-bezel">
+                <div class="monitor-screen crt" id="monitor-screen">
+                    <div class="screen-content" id="screen-content"></div>
+                </div>
+                <div class="monitor-footer">
+                    <span class="monitor-brand">RN-86</span>
+                    <span class="power-led" id="power-led"></span>
+                </div>
+            </div>
+        </section>
+    </main>
     <script type="module" src="./script.js"></script>
 </body>
 </html>

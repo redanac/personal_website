@@ -42,23 +42,27 @@ var FLOPPY_OPTIONS = {
 // get the screen height of the device not the window
 const screenHeight = window.screen.height
 
-console.log(screenHeight)
-console.log(window.innerHeight)
-
 const canvasHeight = screenHeight / 2.0
 const insertedFloppyPosition = new THREE.Vector3(6.19,-1.12,6)
 
-// keep width consistent with window size but fix height to 1/3 of screen height
-const sizes = {
-    width: window.innerWidth, 
-    height: canvasHeight}
-
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
+const canvasContainer = canvas.parentElement
+
+// clientWidth includes padding, so subtract it to match the monitor's width exactly
+const contentWidth = () => {
+    const style = getComputedStyle(canvasContainer)
+    return canvasContainer.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+}
+
+// width follows the centred content column, height fixed to half the screen height
+const sizes = {
+    width: contentWidth(), 
+    height: canvasHeight}
 
 window.addEventListener('resize', () => {
     // Update sizes
-    sizes.width = window.innerWidth
+    sizes.width = contentWidth()
     sizes.height = canvasHeight
 
     camera.aspect = sizes.width /sizes.height
@@ -263,6 +267,8 @@ gltfLoader.load(
         mixer.addEventListener('finished', () => {
         animationPlaying = false
         console.log('animation finished')
+        // the last frame can jump past INSERT_TIME and finish in the same update
+        checkMonitorInsert(true)
 })
 
     },
@@ -478,7 +484,7 @@ const renderer = new THREE.WebGLRenderer({
 
 renderer.setSize(sizes.width, sizes.height)
 // dark grey background
-renderer.setClearColor('darkgrey')
+renderer.setClearColor('#111814')
 
 
 // render
@@ -619,6 +625,47 @@ let pendingFloppy = null
 let returningFloppy = null
 let selectionBusy = false
 
+/**
+ * Monitor
+ */
+
+const monitorScreen = document.getElementById('monitor-screen')
+const screenContent = document.getElementById('screen-content')
+const powerLed = document.getElementById('power-led')
+// name to show once the robot has inserted the floppy
+let monitorPendingName = null
+
+const monitorOn = (name) => {
+    screenContent.textContent = `> LOADING ${name.toUpperCase()}...\n\n${name}`
+    monitorScreen.classList.remove('turning-off', 'is-on')
+    monitorScreen.classList.add('turning-on')
+    powerLed.classList.add('is-on')
+    monitorScreen.addEventListener('animationend', () => {
+        if (!monitorScreen.classList.contains('turning-on')) return
+        monitorScreen.classList.replace('turning-on', 'is-on')
+    }, { once: true })
+}
+
+const monitorOff = () => {
+    if (!monitorScreen.classList.contains('is-on') && !monitorScreen.classList.contains('turning-on')) return
+    monitorScreen.classList.remove('turning-on', 'is-on')
+    monitorScreen.classList.add('turning-off')
+    powerLed.classList.remove('is-on')
+    monitorScreen.addEventListener('animationend', () => {
+        if (!monitorScreen.classList.contains('turning-off')) return
+        monitorScreen.classList.remove('turning-off')
+        screenContent.textContent = ''
+    }, { once: true })
+}
+
+const checkMonitorInsert = (finished = false) => {
+    if (!monitorPendingName || !robotPickupAnimation) return
+    if (finished || robotPickupAnimation.time >= INSERT_TIME) {
+        monitorOn(monitorPendingName)
+        monitorPendingName = null
+    }
+}
+
 const beginSelecting = (selectionFloppy) => {
     selectionFloppy.userData.select.state = 'selecting'
     startTween(selectionFloppy, basePose, SELECT_CONFIG.toBaseDuration, () => {
@@ -627,6 +674,7 @@ const beginSelecting = (selectionFloppy) => {
         selectionFloppy.userData.select.state = 'hidden'
         selectedFloppy = selectionFloppy
         selectionBusy = false
+        monitorPendingName = selectionFloppy.name
         playAnimation()
     })
 }
@@ -646,6 +694,8 @@ const selectFloppy = (next) => {
 
     if (robotPickupAnimation) robotPickupAnimation.stop()
     animationPlaying = false
+    monitorPendingName = null
+    monitorOff()
     ;[floppy, movingFloppy, insertedFloppy].forEach((f) => { f.visible = false })
 
     previous.position.copy(insertPose.position)
@@ -725,6 +775,7 @@ const tick = () =>
                 floppy.visible = time < PICK_UP_TIME
                 movingFloppy.visible = time >= PICK_UP_TIME && time < INSERT_TIME
                 insertedFloppy.visible = time >= INSERT_TIME
+                checkMonitorInsert()
             }
         }
     }
