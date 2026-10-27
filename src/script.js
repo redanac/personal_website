@@ -9,13 +9,15 @@ var paused = false
 
 const PICK_UP_TIME = 2.335
 const INSERT_TIME = 6.639
+const SELECTION_FLOPPY_SPACING = 2.5
+const SELECTION_FLOPPY_Y_OFFSET = 7
 
 var FLOPPY_OPTIONS = {
-    'PERSONAL_PROFILE': 'Personal Profile',
-    'WORK_EXPERIENCE': 'Work Experience',
-    'PROJECTS': 'Projects',
-    'LINKS': 'Links',
-    'CONTACT': 'Contact'
+    'PERSONAL_PROFILE': {name: 'Personal Profile', colour: '#ff0000'},
+    'WORK_EXPERIENCE': {name: 'Work Experience', colour: '#00ff00'},
+    'PROJECTS': {name: 'Projects', colour: '#0000ff'},
+    'LINKS': {name: 'Links', colour: '#ffff00'},
+    'CONTACT': {name: 'Contact', colour: '#ff00ff'}
 }
 
 // get the screen height of the device not the window
@@ -81,6 +83,8 @@ var insertedFloppy = null
 var robotArm = null
 var mixer = null
 var robotPickupAnimation = null
+// list to track the 5 selectable floppy discs
+var selection_floppies = [] 
 
 const gltfLoader = new GLTFLoader()
 gltfLoader.setMeshoptDecoder(MeshoptDecoder)
@@ -122,6 +126,7 @@ gltfLoader.load(
         console.log('floppy',floppy)
         scene.add(floppy)
 
+
         movingFloppy = floppy.clone()
         
         // create another floppy instance for insertion
@@ -154,6 +159,36 @@ gltfLoader.load(
             insertedFloppyFolder.add(insertedFloppy.position, 'z', -10, 10)
         }
 
+        // Iterate through each entry in FLOPPY_OPTIONS and create a selection floppy
+        Object.values(FLOPPY_OPTIONS).forEach((option, index) => {
+            const floppyOption = floppy.clone()
+            floppyOption.position.y = SELECTION_FLOPPY_Y_OFFSET
+            floppyOption.position.x = index * SELECTION_FLOPPY_SPACING 
+            floppyOption.name = option.name
+            // change floppy colour to option colour
+            floppyOption.traverse((child) => {
+                if (child.isMesh) {
+                    child.material = child.material.clone()
+                    child.material.color.set(option.colour)
+                }
+            })
+
+
+            scene.add(floppyOption)
+            selection_floppies.push(floppyOption)
+        })
+
+        if(selection_floppies[0])
+        {
+            const firstSelectionFloppy = selection_floppies[0]
+            const selectionFloppyFolder = gui.addFolder('Selection Floppy')
+            selectionFloppyFolder.add(firstSelectionFloppy.position, 'x', -10, 10)
+            selectionFloppyFolder.add(firstSelectionFloppy.position, 'y', -10, 10)
+            selectionFloppyFolder.add(firstSelectionFloppy.position, 'z', -10, 10)
+            selectionFloppyFolder.add({spacing: SELECTION_FLOPPY_SPACING}, 'spacing', 0, 10).onChange(editFloppySpacing)
+        }
+
+        
         // var outlineMaterial = new THREE.MeshBasicMaterial({ color: 'red', side: THREE.BackSide })
         // var outlineMesh = new THREE.Mesh(floppy.children[0].geometry, outlineMaterial)
         // console.log('floppy', floppy)
@@ -181,6 +216,13 @@ gltfLoader.load(
  */
 
 const gui = new GUI()
+
+const editFloppySpacing = (spacing) => {
+            selection_floppies.forEach((floppy, index) => {
+                floppy.position.x = index * spacing
+            })
+        }
+
 
 // add camera position to debug GUI
 const cameraFolder = gui.addFolder('Camera')
