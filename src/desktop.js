@@ -26,6 +26,18 @@ document.getElementById('credits-icon').addEventListener('dblclick', () => {
 })
 document.getElementById('credits-close').addEventListener('click', () => creditsWindow.close())
 
+const settingsWindow = document.getElementById('settings-window')
+const openSettings = () => {
+    if (settingsWindow.open) return
+    setOffset(settingsWindow, 0, 0)
+    settingsWindow.showModal()
+}
+document.getElementById('settings-icon').addEventListener('dblclick', openSettings)
+document.getElementById('settings-icon').addEventListener('click', (event) => {
+    if (event.detail === 0) openSettings()
+})
+document.getElementById('settings-close').addEventListener('click', () => settingsWindow.close())
+
 const clampToLayer = (icon, left, top) => {
     icon.style.left = `${Math.min(Math.max(0, left), iconLayer.clientWidth - icon.offsetWidth)}px`
     icon.style.top = `${Math.min(Math.max(0, top), iconLayer.clientHeight - icon.offsetHeight)}px`

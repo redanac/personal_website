@@ -27,3 +27,18 @@ Click the `credits.txt` desktop icon to open a draggable Notepad-style window
 above the page. Close it with its X button or Escape. Edit `src/credits.txt` to
 add asset names, creators, source links, licenses, and any modifications.
 The icon follows the desktop's visibility rules (600px and wider).
+
+## Animation settings
+
+Double-click the Settings desktop icon (or activate it with the keyboard) to
+open a draggable settings window. Close the window with its X button or Escape.
+Like the other desktop icons, Settings is visible at widths of 600px and above.
+
+- **Skip robot animation:** on the next disc selection, the disc tweens from
+  its clicked hover position to above the drive slot, then slides vertically
+  into it. It holds its hover position while the previous disc returns.
+  The screen opens after insertion.
+- **Robot animation speed:** adjusts robot playback immediately from 0.5x to 2x.
+  The slider is disabled while skipping is enabled; its value is retained.
+
+Robot animation is enabled at 1x by default. Settings last until the page reloads.

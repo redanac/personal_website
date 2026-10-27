@@ -183,7 +183,8 @@ body {
     outline-offset: -3px;
 }
 
-.credits-window {
+.credits-window,
+.settings-window {
     position: fixed;
     inset: 0;
     box-sizing: border-box;
@@ -195,12 +196,14 @@ body {
     color: #000;
 }
 
-.credits-window[open] {
+.credits-window[open],
+.settings-window[open] {
     display: flex;
     flex-direction: column;
 }
 
-.credits-window::backdrop {
+.credits-window::backdrop,
+.settings-window::backdrop {
     background: transparent;
 }
 
@@ -214,6 +217,59 @@ body {
     background: #fff;
     font: inherit;
     line-height: 1.6;
+}
+
+.settings-window {
+    width: min(420px, calc(100% - 24px));
+    font: inherit;
+}
+
+.settings-content {
+    padding: 1rem;
+    overflow: auto;
+}
+
+.settings-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-content p {
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.settings-content fieldset {
+    margin: 1rem 0 0;
+    min-width: 0;
+}
+
+.settings-content fieldset:disabled {
+    color: #555;
+}
+
+.settings-content input[type="range"] {
+    display: block;
+    width: 100%;
+    margin: 0.75rem 0;
+    accent-color: var(--navy);
+}
+
+.settings-speed-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+}
+
+.settings-launch {
+    background: var(--face);
+    box-shadow: var(--bevel-out);
+    border: 0;
+    padding: 4px 8px;
+    color: #000;
+    font: inherit;
+    cursor: pointer;
 }
 
 .title-bar-controls span:last-child {

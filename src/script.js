@@ -29,8 +29,22 @@ const HOVER_CONFIG = {
 
 const SELECT_CONFIG = {
     toBaseDuration: 0.5,
-    returnDuration: 0.5
+    returnDuration: 0.5,
+    slideDuration: 0.35,
+    slotClearance: 2
 }
+
+const skipRobot = document.getElementById('skip-robot')
+const robotSpeed = document.getElementById('robot-speed')
+const robotSpeedControls = document.getElementById('robot-speed-controls')
+const robotSpeedValue = document.getElementById('robot-speed-value')
+
+skipRobot.addEventListener('change', () => {
+    robotSpeedControls.disabled = skipRobot.checked
+})
+robotSpeed.addEventListener('input', () => {
+    robotSpeedValue.value = `${robotSpeed.value}×`
+})
 
 var FLOPPY_OPTIONS = {
     'PERSONAL_PROFILE': {name: 'Personal Profile', colour: '#ff0000', file: './screens/personal-profile.html'},
@@ -737,6 +751,25 @@ const checkMonitorInsert = (finished = false) => {
 
 const beginSelecting = (selectionFloppy) => {
     selectionFloppy.userData.select.state = 'selecting'
+    if (skipRobot.checked) {
+        const aboveSlotPose = {
+            ...insertPose,
+            position: insertPose.position.clone().add(new THREE.Vector3(0, SELECT_CONFIG.slotClearance, 0))
+        }
+        startTween(selectionFloppy, aboveSlotPose, SELECT_CONFIG.toBaseDuration, () => {
+            startTween(selectionFloppy, insertPose, SELECT_CONFIG.slideDuration, () => {
+                setChosenLabel(selectionFloppy.name)
+                selectionFloppy.visible = false
+                selectionFloppy.userData.select.state = 'hidden'
+                selectedFloppy = selectionFloppy
+                insertedFloppy.visible = true
+                selectionBusy = false
+                monitorOn(FLOPPY_OPTIONS[selectionFloppy.userData.optionKey])
+            })
+        })
+        return
+    }
+
     startTween(selectionFloppy, basePose, SELECT_CONFIG.toBaseDuration, () => {
         setChosenLabel(selectionFloppy.name)
         selectionFloppy.visible = false
@@ -771,7 +804,7 @@ const selectFloppy = (next) => {
 
     const previous = selectedFloppy
     selectedFloppy = null
-    next.userData.select.state = 'pending'
+    next.userData.select.state = skipRobot.checked ? 'waiting' : 'pending'
     pendingFloppy = next
 
     if (robotPickupAnimation) robotPickupAnimation.stop()
@@ -793,9 +826,10 @@ const selectFloppy = (next) => {
     })
 }
 
-// the pending floppy eases back to its slot via the idle/hover code before it starts
+// Skip mode holds the clicked pose while the previous disc returns.
 const updatePending = () => {
-    if (pendingFloppy && !returningFloppy && pendingFloppy.userData.hover.progress === 0) {
+    if (pendingFloppy && !returningFloppy &&
+        (pendingFloppy.userData.select.state === 'waiting' || pendingFloppy.userData.hover.progress === 0)) {
         const next = pendingFloppy
         pendingFloppy = null
         beginSelecting(next)
@@ -849,7 +883,7 @@ const tick = () =>
     {
         if(!paused)
         {
-            mixer.update(deltaTime)
+            mixer.update(deltaTime * Number(robotSpeed.value))
             if (robotPickupAnimation && floppy && movingFloppy && insertedFloppy && animationPlaying)
             {
                 const time = robotPickupAnimation.time
