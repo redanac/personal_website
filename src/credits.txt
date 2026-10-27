@@ -7,9 +7,9 @@ Source URL: https://www.youtube.com/watch?v=QqOShvk4Ne8
 Changes made: Added animation, rigging and colour
 
 Asset: Floppy Disc
-Creator: 
-Source URL:
-Changes made:
+Creator: drumdorf
+Source URL: https://open3dmodel.com/3d-models/floppy-disk_351367.html#s1
+Changes made: Added the labels to them at runtime with Threejs
 
 Asset: CRT style for monitor
 Creator: Alec Lownes
