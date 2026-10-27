@@ -20,12 +20,22 @@ const clampToLayer = (icon, left, top) => {
     icon.style.top = `${Math.min(Math.max(0, top), iconLayer.clientHeight - icon.offsetHeight)}px`
 }
 
-const perColumn = Math.max(1, Math.floor((window.innerHeight - ICON_MARGIN * 2) / ICON_SPACING))
-icons.forEach((icon, index) => {
-    const column = Math.floor(index / perColumn)
-    const row = index % perColumn
-    clampToLayer(icon, ICON_MARGIN + column * ICON_SPACING * 1.1, ICON_MARGIN + row * ICON_SPACING)
-})
+// the layer is display:none on narrow screens, where sizes read as 0 and clamping would stack every icon at 0,0
+const iconsVisible = () => getComputedStyle(iconLayer).display !== 'none'
+let iconsLaidOut = false
+
+const layoutIcons = () => {
+    if (iconsLaidOut || !iconsVisible()) return
+    iconsLaidOut = true
+    const perColumn = Math.max(1, Math.floor((window.innerHeight - ICON_MARGIN * 2) / ICON_SPACING))
+    icons.forEach((icon, index) => {
+        const column = Math.floor(index / perColumn)
+        const row = index % perColumn
+        clampToLayer(icon, ICON_MARGIN + column * ICON_SPACING * 1.1, ICON_MARGIN + row * ICON_SPACING)
+    })
+}
+
+layoutIcons()
 
 icons.forEach((icon) => {
     let drag = null
@@ -62,8 +72,12 @@ icons.forEach((icon) => {
     icon.addEventListener('pointercancel', endDrag)
 })
 
-// read from style, not offsetLeft/Top, which are 0 while the icons are hidden on narrow screens
 window.addEventListener('resize', () => {
+    if (!iconsVisible()) return
+    if (!iconsLaidOut) {
+        layoutIcons()
+        return
+    }
     icons.forEach((icon) => clampToLayer(icon, parseFloat(icon.style.left), parseFloat(icon.style.top)))
 })
 
