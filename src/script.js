@@ -3,6 +3,7 @@ import { GLTFLoader, ThreeMFLoader } from 'three/examples/jsm/Addons.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
+import { onPointerTap } from './pointer-tap.mjs'
 // SETUP
 
 var paused = false
@@ -38,10 +39,15 @@ const skipRobot = document.getElementById('skip-robot')
 const robotSpeed = document.getElementById('robot-speed')
 const robotSpeedControls = document.getElementById('robot-speed-controls')
 const robotSpeedValue = document.getElementById('robot-speed-value')
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+const shouldSkipRobot = () => skipRobot.checked || reducedMotion.matches
 
-skipRobot.addEventListener('change', () => {
-    robotSpeedControls.disabled = skipRobot.checked
-})
+const syncRobotSpeedControls = () => {
+    robotSpeedControls.disabled = shouldSkipRobot()
+}
+skipRobot.addEventListener('change', syncRobotSpeedControls)
+reducedMotion.addEventListener('change', syncRobotSpeedControls)
+syncRobotSpeedControls()
 robotSpeed.addEventListener('input', () => {
     robotSpeedValue.value = `${robotSpeed.value}×`
 })
@@ -56,12 +62,27 @@ var FLOPPY_OPTIONS = {
 
 // each screen becomes its own chunk, loaded on demand as a raw string
 const screenLoaders = import.meta.glob('./screens/*.html', { query: '?raw', import: 'default' })
+const sectionSelector = document.getElementById('section-selector')
+const selectionStatus = document.getElementById('selection-status')
+const sectionButtons = new Map()
+Object.entries(FLOPPY_OPTIONS).forEach(([key, option]) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = option.name
+    button.disabled = true
+    button.addEventListener('click', () => {
+        requestSelection(selection_floppies.find((disc) => disc.userData.optionKey === key))
+    })
+    sectionButtons.set(key, button)
+    sectionSelector.append(button)
+})
 
 // loaded up front; content is a promise so monitorOn can await it if it isn't ready yet
 Object.values(FLOPPY_OPTIONS).forEach((option) => {
     const load = screenLoaders[option.file]
     option.content = (load ? load() : Promise.reject(new Error(`${option.file}: not found`))).catch((error) => {
         console.error(error)
+        option.loadError = true
         return `<p>&gt; ERROR: could not load ${option.name}</p>`
     })
 })
@@ -282,6 +303,7 @@ gltfLoader.load(
         // the last frame can jump past INSERT_TIME and finish in the same update
         checkMonitorInsert(true)
 })
+        loadFloppy()
 
     },
     (progress) =>
@@ -289,12 +311,12 @@ gltfLoader.load(
     },
     (error) =>
     {
-        console.log('error')
-        console.log(error)
+        console.error('Unable to load the robot model', error)
+        selectionStatus.textContent = 'Unable to load the robot. Please reload to try again.'
     }
 )
 
-gltfLoader.load(
+const loadFloppy = () => gltfLoader.load(
     `${import.meta.env.BASE_URL}models/floppy/floppy.glb`,
     (gltf) => 
     {
@@ -437,8 +459,8 @@ gltfLoader.load(
     },
     (error) =>
     {
-        console.log('error')
-        console.log(error)
+        console.error('Unable to load the floppy model', error)
+        selectionStatus.textContent = 'Unable to load the floppy disks. Please reload to try again.'
     }
 )
 
@@ -582,6 +604,7 @@ let pointerInside = false
 let hoveredFloppy = null
 
 canvas.addEventListener('pointermove', (event) => {
+    if (event.pointerType !== 'mouse') return
     const rect = canvas.getBoundingClientRect()
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
@@ -592,26 +615,33 @@ canvas.addEventListener('pointerleave', () => {
     pointerInside = false
 })
 
-const updateHoveredFloppy = () => {
+const hitTestFloppy = (clientX, clientY) => {
+    const rect = canvas.getBoundingClientRect()
+    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1
+    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1
+    scene.updateMatrixWorld(true)
+    return findFloppyAtPointer()
+}
+
+const findFloppyAtPointer = () => {
     hoverHitAreas.forEach((hitArea) => {
         const idle = hitArea.userData.floppy.userData.idle
         const [ox, oy, oz] = hitArea.userData.offset
         hitArea.position.set(idle.baseX + ox, idle.baseY + oy, idle.baseZ + oz)
+        hitArea.updateMatrixWorld(true)
     })
-
-    let next = null
-    if (pointerInside) {
-        raycaster.setFromCamera(pointer, camera)
-        const isIdle = (f) => f.userData.select.state === 'idle'
-        // the focused floppy can cover other slots, so it keeps priority while under the cursor
-        if (hoveredFloppy && isIdle(hoveredFloppy) && raycaster.intersectObject(hoveredFloppy, true).length) {
-            next = hoveredFloppy
-        } else {
-            const hitArea = raycaster.intersectObjects(hoverHitAreas.filter((h) => isIdle(h.userData.floppy)), false)[0]
-            next = hitArea ? hitArea.object.userData.floppy : null
-        }
+    raycaster.setFromCamera(pointer, camera)
+    const isIdle = (f) => f.userData.select.state === 'idle'
+    // The focused floppy can cover other slots, so it keeps priority under the cursor.
+    if (hoveredFloppy && isIdle(hoveredFloppy) && raycaster.intersectObject(hoveredFloppy, true).length) {
+        return hoveredFloppy
     }
-    hoveredFloppy = next
+    const hitArea = raycaster.intersectObjects(hoverHitAreas.filter((h) => isIdle(h.userData.floppy)), false)[0]
+    return hitArea ? hitArea.object.userData.floppy : null
+}
+
+const updateHoveredFloppy = () => {
+    hoveredFloppy = pointerInside && !reducedMotion.matches ? findFloppyAtPointer() : null
     canvas.style.cursor = hoveredFloppy ? 'pointer' : 'default'
 }
 
@@ -634,7 +664,7 @@ const startTween = (object, toPose, duration, onComplete) => {
         fromRotZ: object.rotation.z,
         toRotZ: toPose.rotZ,
         progress: 0,
-        duration,
+        duration: reducedMotion.matches ? 0.001 : duration,
         onComplete
     })
 }
@@ -674,6 +704,34 @@ const powerLed = document.getElementById('power-led')
 let monitorPendingOption = null
 // bumped on every on/off so a slow fetch can't switch the screen on after it was turned off
 let monitorToken = 0
+let finishMonitorTransition = null
+
+const transitionMonitor = (on) => {
+    if (finishMonitorTransition) finishMonitorTransition()
+    monitorScreen.classList.remove('turning-on', 'turning-off', 'is-on')
+    powerLed.classList.toggle('is-on', on)
+    const finish = () => {
+        screenContent.removeEventListener('animationend', onAnimationEnd)
+        monitorScreen.classList.remove('turning-on', 'turning-off')
+        monitorScreen.classList.toggle('is-on', on)
+        if (!on) screenContent.replaceChildren()
+        finishMonitorTransition = null
+    }
+    const onAnimationEnd = (event) => {
+        if (event.target === screenContent && event.animationName === (on ? 'crt-on' : 'crt-off')) finish()
+    }
+    if (reducedMotion.matches) {
+        finish()
+    } else {
+        finishMonitorTransition = finish
+        screenContent.addEventListener('animationend', onAnimationEnd)
+        monitorScreen.classList.add(on ? 'turning-on' : 'turning-off')
+    }
+}
+
+reducedMotion.addEventListener('change', () => {
+    if (reducedMotion.matches && finishMonitorTransition) finishMonitorTransition()
+})
 
 const buildScreenWindow = (option, html) => {
     const win = document.createElement('div')
@@ -718,27 +776,18 @@ const monitorOn = async (option) => {
     const html = await option.content
     if (token !== monitorToken) return
 
+    if (finishMonitorTransition) finishMonitorTransition()
     screenContent.replaceChildren(buildScreenWindow(option, html))
-    monitorScreen.classList.remove('turning-off', 'is-on')
-    monitorScreen.classList.add('turning-on')
-    powerLed.classList.add('is-on')
-    monitorScreen.addEventListener('animationend', () => {
-        if (!monitorScreen.classList.contains('turning-on')) return
-        monitorScreen.classList.replace('turning-on', 'is-on')
-    }, { once: true })
+    selectionStatus.textContent = option.loadError
+        ? `Unable to load ${option.name}. Please reload to try again.`
+        : `${option.name} loaded.`
+    transitionMonitor(true)
 }
 
 const monitorOff = () => {
     monitorToken++
     if (!monitorScreen.classList.contains('is-on') && !monitorScreen.classList.contains('turning-on')) return
-    monitorScreen.classList.remove('turning-on', 'is-on')
-    monitorScreen.classList.add('turning-off')
-    powerLed.classList.remove('is-on')
-    monitorScreen.addEventListener('animationend', () => {
-        if (!monitorScreen.classList.contains('turning-off')) return
-        monitorScreen.classList.remove('turning-off')
-        screenContent.innerHTML = ''
-    }, { once: true })
+    transitionMonitor(false)
 }
 
 const checkMonitorInsert = (finished = false) => {
@@ -751,7 +800,7 @@ const checkMonitorInsert = (finished = false) => {
 
 const beginSelecting = (selectionFloppy) => {
     selectionFloppy.userData.select.state = 'selecting'
-    if (skipRobot.checked) {
+    if (shouldSkipRobot()) {
         const aboveSlotPose = {
             ...insertPose,
             position: insertPose.position.clone().add(new THREE.Vector3(0, SELECT_CONFIG.slotClearance, 0))
@@ -804,7 +853,7 @@ const selectFloppy = (next) => {
 
     const previous = selectedFloppy
     selectedFloppy = null
-    next.userData.select.state = skipRobot.checked ? 'waiting' : 'pending'
+    next.userData.select.state = shouldSkipRobot() ? 'waiting' : 'pending'
     pendingFloppy = next
 
     if (robotPickupAnimation) robotPickupAnimation.stop()
@@ -836,8 +885,20 @@ const updatePending = () => {
     }
 }
 
-canvas.addEventListener('click', () => {
-    if (hoveredFloppy && !selectionBusy) selectFloppy(hoveredFloppy)
+const requestSelection = (disc) => {
+    if (!disc || selectionBusy || disc.userData.select.state !== 'idle') return
+    selectionStatus.textContent = `Loading ${disc.name}...`
+    selectFloppy(disc)
+}
+
+canvas.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'mouse') {
+        pointerInside = false
+        hoveredFloppy = null
+    }
+})
+onPointerTap(canvas, (x, y) => {
+    requestSelection(hitTestFloppy(x, y))
 })
 
 const idlePosition = new THREE.Vector3()
@@ -854,7 +915,7 @@ const updateIdleFloppies = (elapsedTime, deltaTime) =>
 
         const idle = selectionFloppy.userData.idle
         const hover = selectionFloppy.userData.hover
-        const t = elapsedTime * idle.speed + idle.phase
+        const t = reducedMotion.matches ? 0 : elapsedTime * idle.speed + idle.phase
 
         idlePosition.set(idle.baseX, idle.baseY + Math.sin(t * IDLE_CONFIG.bobSpeed) * IDLE_CONFIG.bobAmplitude, idle.baseZ)
         // different frequencies so bob, sway and tilt never line up
@@ -900,6 +961,13 @@ const tick = () =>
     updateTweens(deltaTime)
     updateIdleFloppies(elapsedTime, deltaTime)
     updatePending()
+    selection_floppies.forEach((disc) => {
+        const button = sectionButtons.get(disc.userData.optionKey)
+        const disabled = selectionBusy || disc.userData.select.state !== 'idle'
+        if (button.disabled !== disabled) button.disabled = disabled
+        const current = disc === selectedFloppy ? 'page' : 'false'
+        if (button.getAttribute('aria-current') !== current) button.setAttribute('aria-current', current)
+    })
 
     // Render
     renderer.render(scene, camera)

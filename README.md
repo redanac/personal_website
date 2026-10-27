@@ -10,6 +10,47 @@ This repo is a personal website showing some information about myself. It's buil
 ## How to run locally
 To run this repo locally simply clone the repo and run `npm install` followed by `npm run dev`
 
+## Mouse, keyboard, and touch controls
+
+- With a mouse, hover over a floppy to preview it and click to load its section.
+  Desktop icons still open with a double-click, and windows and icons can be dragged.
+- With touch or a pen, tap a floppy once to load it. Swipes over the scene remain
+  scrolling gestures rather than selections. Window and icon dragging is mouse-only
+  so touch users can scroll normally; browser pinch-to-zoom remains enabled.
+- The Settings and Credits toolbar and labelled section buttons appear only when
+  the browser reports a coarse pointer (`any-pointer: coarse`), including touchscreen
+  laptops. They also support keyboard activation. Mouse-only devices keep the
+  original desktop layout without extra buttons or visible loading text.
+  Section buttons become available once the models have loaded; the current section
+  is marked and loading progress is announced to assistive technology on all devices.
+- On narrow screens the monitor's content window uses the available screen space.
+  Touch devices get larger close buttons and settings controls.
+- The system's reduced-motion preference disables the CRT effects and hover motion,
+  and uses a near-instant direct disc insertion instead of the robot animation.
+  Settings also lets anyone skip the robot or change its speed.
+
+### Compatibility checks
+
+Run `npm test` for the pointer gesture regression tests and `npm run build`,
+then check the site on desktop and on iOS Safari / Android
+Chrome, in portrait and landscape:
+
+- Check widths of 320, 375, 390, and 768 CSS pixels and a short landscape viewport:
+  no horizontal page overflow, readable content, and reachable dialog close buttons.
+- Open each section with a single tap, section button, and keyboard. Try rapid taps
+  during insertion; selections should not overlap or display stale content.
+- Swipe over the canvas and inside the content window, and pinch to zoom. A swipe,
+  cancelled pointer, or multi-finger gesture must not select a floppy.
+- Open and close Settings and Credits; check skip-animation and speed controls.
+- Rotate the device with a dialog open, and verify it stays within the viewport.
+- Enable reduced motion, including while a CRT transition is running: content should
+  still load and the monitor must not remain stuck between states.
+- Recheck mouse hover, double-click launchers, dragging, and section switching with
+  the robot animation both enabled and skipped.
+- On mouse-only devices, confirm the extra toolbar and section buttons are hidden,
+  even at narrow widths. On touchscreen devices, confirm they remain visible,
+  including when a mouse is also connected.
+
 ## GitHub Pages deployment
 
 The site is deployed to https://redanac.github.io/personal_website/ by

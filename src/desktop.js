@@ -19,11 +19,11 @@ const isOverNoDropZone = (element) => {
 
 const creditsWindow = document.getElementById('credits-window')
 document.getElementById('credits-content').textContent = creditsText
-document.getElementById('credits-icon').addEventListener('dblclick', () => {
+const openCredits = () => {
     if (creditsWindow.open) return
     setOffset(creditsWindow, 0, 0)
     creditsWindow.showModal()
-})
+}
 document.getElementById('credits-close').addEventListener('click', () => creditsWindow.close())
 
 const settingsWindow = document.getElementById('settings-window')
@@ -32,11 +32,18 @@ const openSettings = () => {
     setOffset(settingsWindow, 0, 0)
     settingsWindow.showModal()
 }
-document.getElementById('settings-icon').addEventListener('dblclick', openSettings)
-document.getElementById('settings-icon').addEventListener('click', (event) => {
-    if (event.detail === 0) openSettings()
-})
 document.getElementById('settings-close').addEventListener('click', () => settingsWindow.close())
+;[['credits', openCredits], ['settings', openSettings]].forEach(([name, open]) => {
+    const icon = document.getElementById(`${name}-icon`)
+    let pointerType = 'mouse'
+    icon.addEventListener('pointerdown', (event) => { pointerType = event.pointerType })
+    icon.addEventListener('dblclick', open)
+    icon.addEventListener('click', (event) => {
+        if (event.defaultPrevented) return
+        if (event.detail === 0 || (event.pointerType || pointerType) !== 'mouse') open()
+    })
+    document.getElementById(`${name}-launch`).addEventListener('click', open)
+})
 
 const clampToLayer = (icon, left, top) => {
     icon.style.left = `${Math.min(Math.max(0, left), iconLayer.clientWidth - icon.offsetWidth)}px`
@@ -70,8 +77,8 @@ icons.forEach((icon) => {
     let dragged = false
 
     icon.addEventListener('pointerdown', (event) => {
-        if (event.button !== 0) return
         dragged = false
+        if (event.button !== 0 || event.pointerType !== 'mouse') return
         icon.focus()
         icon.setPointerCapture(event.pointerId)
         drag = { x: event.clientX, y: event.clientY, left: parseFloat(icon.style.left), top: parseFloat(icon.style.top), moved: false }
@@ -101,6 +108,7 @@ icons.forEach((icon) => {
     }
     icon.addEventListener('pointerup', endDrag)
     icon.addEventListener('pointercancel', endDrag)
+    icon.addEventListener('lostpointercapture', endDrag)
     icon.addEventListener('click', (event) => {
         if (dragged && event.detail !== 0) {
             event.preventDefault()
@@ -136,7 +144,7 @@ window.addEventListener('resize', () => {
 document.addEventListener('pointerdown', (event) => {
     const handle = event.target.closest('.title-bar')
     const win = handle && handle.closest('[data-drag]')
-    if (!win || event.button !== 0 || event.target.closest('button')) return
+    if (!win || event.button !== 0 || event.pointerType !== 'mouse' || event.target.closest('button')) return
 
     event.preventDefault()
     handle.setPointerCapture(event.pointerId)

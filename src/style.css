@@ -67,7 +67,7 @@ body {
     font-size: 0.7rem;
     cursor: url('/cursors/arrow.svg') 1 1, default;
     pointer-events: auto;
-    touch-action: none;
+    touch-action: pan-y pinch-zoom;
     user-select: none;
 }
 
@@ -129,7 +129,7 @@ body {
 
 [data-drag] > .title-bar {
     cursor: url('/cursors/arrow.svg') 1 1, default;
-    touch-action: none;
+    touch-action: pan-y pinch-zoom;
     user-select: none;
 }
 
@@ -147,6 +147,7 @@ body {
 }
 
 .title-bar-text {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -225,6 +226,7 @@ body {
 }
 
 .settings-content {
+    min-height: 0;
     padding: 1rem;
     overflow: auto;
 }
@@ -287,6 +289,126 @@ body {
     overflow-wrap: anywhere;
 }
 
+.utility-toolbar,
+.section-selector {
+    display: none;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.utility-toolbar button,
+.section-selector button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    background: var(--face);
+    box-shadow: var(--bevel-out);
+    color: #000;
+    font: inherit;
+    cursor: pointer;
+}
+
+.section-selector {
+    margin-top: 12px;
+}
+
+.section-selector button {
+    flex: 1 1 140px;
+}
+
+.section-selector button[aria-current="page"] {
+    background: var(--navy);
+    color: #fff;
+}
+
+.section-selector button:disabled:not([aria-current="page"]) {
+    color: #555;
+    cursor: wait;
+}
+
+.section-selector button[aria-current="page"]:disabled {
+    cursor: default;
+}
+
+.utility-toolbar button:focus-visible,
+.section-selector button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.selection-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
+.touch-instructions {
+    display: none;
+}
+
+@media (any-pointer: coarse) {
+    .utility-toolbar,
+    .section-selector {
+        display: flex;
+    }
+
+    .selection-status {
+        position: static;
+        width: auto;
+        height: auto;
+        margin: 1em 0;
+        overflow: visible;
+        clip-path: none;
+        white-space: normal;
+    }
+
+    .mouse-instructions {
+        display: none;
+    }
+
+    .touch-instructions {
+        display: inline;
+    }
+
+    .title-bar-controls button {
+        width: 44px;
+        height: 44px;
+        font-size: 1rem;
+    }
+
+    .settings-toggle,
+    .settings-content input[type="range"] {
+        min-height: 44px;
+    }
+
+    .terminal a {
+        display: inline-block;
+        padding-block: 12px;
+    }
+}
+
+@media (max-width: 599px) {
+    .monitor .screen-window {
+        top: 4px;
+        left: 4px;
+        width: calc(100% - 8px);
+        height: calc(100% - 8px);
+    }
+
+    .title-bar-controls button {
+        width: 44px;
+        height: 44px;
+    }
+}
+
 h1 {
     margin-top: 0;
     color: var(--accent);
@@ -317,6 +439,7 @@ canvas.webgl {
     border: 2px solid #000;
     border-bottom: none;
     box-sizing: border-box;
+    touch-action: pan-y pinch-zoom;
 }
 
 /* Monitor */
@@ -650,4 +773,20 @@ canvas.webgl {
 }
 .crt {
   animation: textShadow 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .crt,
+    .crt::after,
+    .cursor,
+    .monitor-screen.turning-on .screen-content,
+    .monitor-screen.turning-off .screen-content {
+        animation: none;
+    }
+
+    .power-led,
+    .window.returning,
+    .desktop-icon.returning {
+        transition: none;
+    }
 }

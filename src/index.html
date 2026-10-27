@@ -33,13 +33,19 @@
             <div class="window-body terminal">
                 <h1>Redha Nacef's Personal Website</h1>
                 <p class="instructions">
-                    C:\REDHA&gt; Hover over a floppy disk to take a closer look. Click one to load it. <br>
-                    C:\REDHA&gt; Double-click credits.txt to view the credits. <br>
+                    <span class="mouse-instructions">C:\REDHA&gt; Hover over a floppy disk to take a closer look. Click one to load it.</span>
+                    <span class="touch-instructions">C:\REDHA&gt; Tap a floppy disk or a section button to load it.</span><br>
+                    <span class="mouse-instructions">C:\REDHA&gt; Double-click credits.txt to view the credits.</span>
+                    <span class="touch-instructions">C:\REDHA&gt; Use the Settings or Credits buttons below.</span><br>
                     C:\REDHA&gt; Or go to the settings to adjust the robot animation speed.
                     <span class="cursor">_</span>
                 </p>
             </div>
         </section>
+        <nav class="utility-toolbar" aria-label="Desktop tools">
+            <button type="button" id="settings-launch" aria-haspopup="dialog" aria-controls="settings-window">Settings</button>
+            <button type="button" id="credits-launch" aria-haspopup="dialog" aria-controls="credits-window">Credits</button>
+        </nav>
         <!-- canvas has rounded top edges-->
         <canvas style="border-radius: 10px 10px 0 0;" class="webgl"></canvas>
         <section class="monitor" id="monitor">
@@ -53,6 +59,8 @@
                 </div>
             </div>
         </section>
+        <nav class="section-selector" id="section-selector" aria-label="Website sections"></nav>
+        <p class="selection-status" id="selection-status" role="status">Loading the floppy disks...</p>
     </main>
     <dialog class="window credits-window" id="credits-window" data-drag="overlay" aria-labelledby="credits-title">
         <div class="title-bar">
@@ -72,7 +80,7 @@
         </div>
         <div class="window-body settings-content">
             <label class="settings-toggle"><input type="checkbox" id="skip-robot" aria-describedby="skip-robot-help"> Skip robot animation</label>
-            <p id="skip-robot-help">Applies to the next disc selection. The disc moves above the slot, then slides straight in.</p>
+            <p id="skip-robot-help">Applies to the next disc selection. The disc moves above the slot, then slides straight in. Your device's reduced-motion setting also skips the robot, with near-instant insertion.</p>
             <fieldset id="robot-speed-controls">
                 <legend>Robot animation speed</legend>
                 <label for="robot-speed">Speed: <output id="robot-speed-value" for="robot-speed">3×</output></label>
