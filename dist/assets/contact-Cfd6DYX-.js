@@ -1,0 +1,7 @@
+import{t as e}from"./index-HPDsg9rH.js";var t;e((()=>{t=`<h2>&gt; CONTACT</h2>
+<p>Feel free to get in touch.</p>
+<ul>
+    <li>Email: <a href="mailto:redhanacef@gmail.com">redhanacef@gmail.com</a></li>
+</ul>
+`}))();export{t as default};
+//# sourceMappingURL=contact-Cfd6DYX-.js.map

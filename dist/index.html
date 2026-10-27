@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redha Nacef Personal Website</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+  <script type="module" crossorigin src="/assets/index-HPDsg9rH.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Be5R4Uf9.css">
+</head>
+<body>
+    <nav class="desktop-icons" aria-label="Desktop">
+        <button class="desktop-icon" id="settings-icon" type="button" aria-haspopup="dialog" aria-controls="settings-window"><img src="/icons/settings.svg" alt=""><span>Settings</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/my-machine.svg" alt=""><span>My Machine</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/net-surfer.svg" alt=""><span>Net Surfer</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/scribe.svg" alt=""><span>Scribe</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/doodle.svg" alt=""><span>Doodle</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/bomb-hunt.svg" alt=""><span>Bomb Hunt</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/boom.svg" alt=""><span>BOOM</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/ros2.svg" alt=""><span>ROS 2</span></button>
+        <button class="desktop-icon" type="button"><img src="/icons/bin.svg" alt=""><span>Bin</span></button>
+        <button class="desktop-icon" id="credits-icon" type="button" aria-haspopup="dialog" aria-controls="credits-window"><img src="/icons/text-file.svg" alt=""><span>credits.txt</span></button>
+    </nav>
+    <main class="page">
+        <section class="window" data-drag="page">
+            <div class="title-bar">
+                <span class="title-bar-text">MS-DOS Prompt - C:\REDHA\README.TXT</span>
+                <div class="title-bar-controls" aria-hidden="true">
+                    <span>_</span><span>&#9633;</span><span>&times;</span>
+                </div>
+            </div>
+            <div class="window-body terminal">
+                <h1>Redha Nacef's Personal Website</h1>
+                <p class="instructions">
+                    C:\REDHA&gt; Hover over a floppy disk to take a closer look. Click one to load it. <br>
+                    C:\REDHA&gt; Double-click credits.txt to view the credits. <br>
+                    C:\REDHA&gt; Or go to the settings to adjust the robot animation speed.
+                    <span class="cursor">_</span>
+                </p>
+            </div>
+        </section>
+        <!-- canvas has rounded top edges-->
+        <canvas style="border-radius: 10px 10px 0 0;" class="webgl"></canvas>
+        <section class="monitor" id="monitor">
+            <div class="monitor-bezel">
+                <div class="monitor-screen crt" id="monitor-screen">
+                    <div class="screen-content" id="screen-content"></div>
+                </div>
+                <div class="monitor-footer">
+                    <span class="monitor-brand">RN-64</span>
+                    <span class="power-led" id="power-led"></span>
+                </div>
+            </div>
+        </section>
+    </main>
+    <dialog class="window credits-window" id="credits-window" data-drag="overlay" aria-labelledby="credits-title">
+        <div class="title-bar">
+            <span class="title-bar-text" id="credits-title">credits.txt - Notepad</span>
+            <div class="title-bar-controls">
+                <button type="button" id="credits-close" aria-label="Close credits">&times;</button>
+            </div>
+        </div>
+        <pre class="window-body credits-content" id="credits-content"></pre>
+    </dialog>
+    <dialog class="window settings-window" id="settings-window" data-drag="overlay" aria-labelledby="settings-title">
+        <div class="title-bar">
+            <span class="title-bar-text" id="settings-title">Settings - Robot Animation</span>
+            <div class="title-bar-controls">
+                <button type="button" id="settings-close" aria-label="Close settings">&times;</button>
+            </div>
+        </div>
+        <div class="window-body settings-content">
+            <label class="settings-toggle"><input type="checkbox" id="skip-robot" aria-describedby="skip-robot-help"> Skip robot animation</label>
+            <p id="skip-robot-help">Applies to the next disc selection. The disc moves above the slot, then slides straight in.</p>
+            <fieldset id="robot-speed-controls">
+                <legend>Robot animation speed</legend>
+                <label for="robot-speed">Speed: <output id="robot-speed-value" for="robot-speed">3×</output></label>
+                <input type="range" id="robot-speed" min="0.5" max="5" step="0.25" value="3">
+                <div class="settings-speed-labels" aria-hidden="true"><span>0.5×</span><span>5×</span></div>
+            </fieldset>
+        </div>
+    </dialog>
+</body>
+</html>
