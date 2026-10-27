@@ -86,6 +86,143 @@ var robotPickupAnimation = null
 // list to track the 5 selectable floppy discs
 var selection_floppies = [] 
 
+/**
+ * Labels
+ */
+
+// offsets/sizes are fractions of the floppy face size; tune with the 'Label' GUI folder
+const LABEL_CONFIG = {
+    canvasWidth: 512,
+    widthRatio: 0.7,
+    heightRatio: 0.35,
+    offsetU: 0,
+    offsetV: -0.07,
+    spin: 0,
+    flip: true,
+    paperColour: '#f4f1e6',
+    inkColour: '#1a1a1a',
+    ruleColour: '#9fb7d9',
+    font: '"Courier New", monospace'
+}
+
+const labels = []
+
+const drawLabel = (labelCanvas, text) => {
+    const ctx = labelCanvas.getContext('2d')
+    const w = labelCanvas.width
+    const h = labelCanvas.height
+
+    ctx.fillStyle = LABEL_CONFIG.paperColour
+    ctx.fillRect(0, 0, w, h)
+
+    ctx.strokeStyle = LABEL_CONFIG.ruleColour
+    ctx.lineWidth = Math.max(1, h * 0.01)
+    for (let y = h * 0.3; y < h; y += h * 0.2) {
+        ctx.beginPath()
+        ctx.moveTo(w * 0.05, y)
+        ctx.lineTo(w * 0.95, y)
+        ctx.stroke()
+    }
+
+    let fontSize = h * 0.4
+    ctx.font = `bold ${fontSize}px ${LABEL_CONFIG.font}`
+    while (ctx.measureText(text).width > w * 0.9 && fontSize > 10) {
+        fontSize -= 2
+        ctx.font = `bold ${fontSize}px ${LABEL_CONFIG.font}`
+    }
+    ctx.fillStyle = LABEL_CONFIG.inkColour
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, w / 2, h / 2)
+}
+
+const findBodyMesh = (root) => {
+    let body = null
+    root.traverse((child) => {
+        if (!body && child.isMesh && !child.userData.isLabel) body = child
+    })
+    return body
+}
+
+const layoutLabel = (label) => {
+    const geometry = label.parent.geometry
+    if (!geometry.boundingBox) geometry.computeBoundingBox()
+    const size = geometry.boundingBox.getSize(new THREE.Vector3())
+    const center = geometry.boundingBox.getCenter(new THREE.Vector3())
+
+    // the thinnest bbox axis is the face normal
+    const thin = ['x', 'y', 'z'].reduce((a, b) => (size[b] < size[a] ? b : a))
+    const [uAxis, vAxis] = thin === 'x' ? ['z', 'y'] : thin === 'y' ? ['x', 'z'] : ['x', 'y']
+    const sign = LABEL_CONFIG.flip ? -1 : 1
+
+    label.position.copy(center)
+    label.position[thin] += sign * size[thin] * 0.51
+    label.position[uAxis] += LABEL_CONFIG.offsetU * size[uAxis]
+    label.position[vAxis] += LABEL_CONFIG.offsetV * size[vAxis]
+
+    const xDir = new THREE.Vector3()
+    // negating x (not y) on flip turns the label round its vertical axis so it stays upright
+    xDir[uAxis] = sign
+    const zDir = new THREE.Vector3()
+    zDir[thin] = sign
+    const yDir = new THREE.Vector3().crossVectors(zDir, xDir)
+    label.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xDir, yDir, zDir))
+    label.rotateZ(LABEL_CONFIG.spin)
+
+    label.scale.set(LABEL_CONFIG.widthRatio * size[uAxis], LABEL_CONFIG.heightRatio * size[vAxis], 1)
+}
+
+// call after any clone() of floppyRoot, otherwise clones share the label material
+const addLabel = (floppyRoot, text) => {
+    const body = findBodyMesh(floppyRoot)
+    if (!body) return null
+
+    // not disposed: an existing label may share its material with the object it was cloned from
+    const existing = body.children.find((child) => child.userData.isLabel)
+    if (existing) {
+        body.remove(existing)
+        labels.splice(labels.indexOf(existing), 1)
+    }
+
+    const material = new THREE.MeshStandardMaterial({
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1
+    })
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material)
+    label.name = 'floppyLabel'
+    label.userData.isLabel = true
+    body.add(label)
+    layoutLabel(label)
+
+    const labelCanvas = document.createElement('canvas')
+    labelCanvas.width = LABEL_CONFIG.canvasWidth
+    labelCanvas.height = Math.round(LABEL_CONFIG.canvasWidth * label.scale.y / label.scale.x)
+    drawLabel(labelCanvas, text)
+
+    const texture = new THREE.CanvasTexture(labelCanvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    // the model's transform mirrors the label vertically, so undo it here
+    texture.flipY = false
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+    material.map = texture
+
+    labels.push(label)
+    return label
+}
+
+const setLabelText = (floppyRoot, text) => {
+    const label = floppyRoot.getObjectByName('floppyLabel')
+    if (!label) return addLabel(floppyRoot, text)
+    drawLabel(label.material.map.image, text)
+    label.material.map.needsUpdate = true
+    return label
+}
+
+const setChosenLabel = (text) => {
+    [floppy, movingFloppy, insertedFloppy].forEach((f) => f && setLabelText(f, text))
+}
+
 const gltfLoader = new GLTFLoader()
 gltfLoader.setMeshoptDecoder(MeshoptDecoder)
 
@@ -127,6 +264,7 @@ gltfLoader.load(
         scene.add(floppy)
 
 
+
         movingFloppy = floppy.clone()
         
         // create another floppy instance for insertion
@@ -166,17 +304,23 @@ gltfLoader.load(
             floppyOption.position.x = index * SELECTION_FLOPPY_SPACING 
             floppyOption.name = option.name
             // change floppy colour to option colour
-            floppyOption.traverse((child) => {
-                if (child.isMesh) {
-                    child.material = child.material.clone()
-                    child.material.color.set(option.colour)
-                }
-            })
+            // floppyOption.traverse((child) => {
+            //     if (child.isMesh && !child.userData.isLabel) {
+            //         child.material = child.material.clone()
+            //         child.material.color.set(option.colour)
+            //     }
+            // })
 
 
+            addLabel(floppyOption, option.name)
             scene.add(floppyOption)
             selection_floppies.push(floppyOption)
         })
+
+        const defaultLabel = Object.values(FLOPPY_OPTIONS)[0].name
+        addLabel(floppy, defaultLabel)
+        addLabel(movingFloppy, defaultLabel)
+        addLabel(insertedFloppy, defaultLabel)
 
         if(selection_floppies[0])
         {
@@ -188,6 +332,7 @@ gltfLoader.load(
             selectionFloppyFolder.add({spacing: SELECTION_FLOPPY_SPACING}, 'spacing', 0, 10).onChange(editFloppySpacing)
         }
 
+        floppy.visible = false
         
         // var outlineMaterial = new THREE.MeshBasicMaterial({ color: 'red', side: THREE.BackSide })
         // var outlineMesh = new THREE.Mesh(floppy.children[0].geometry, outlineMaterial)
@@ -235,6 +380,20 @@ const animationFolder = gui.addFolder('Animations')
 // add button to play animation
 animationFolder.add({play: () => playAnimation()}, 'play')
 animationFolder.add({pause: () => pauseAnimation()}, 'pause')
+animationFolder.add(
+    {label: Object.values(FLOPPY_OPTIONS)[0].name},
+    'label',
+    Object.values(FLOPPY_OPTIONS).map((option) => option.name)
+).onChange(setChosenLabel)
+
+const relayoutLabels = () => labels.forEach(layoutLabel)
+const labelFolder = gui.addFolder('Label')
+labelFolder.add(LABEL_CONFIG, 'offsetU', -0.5, 0.5, 0.01).onChange(relayoutLabels)
+labelFolder.add(LABEL_CONFIG, 'offsetV', -0.5, 0.5, 0.01).onChange(relayoutLabels)
+labelFolder.add(LABEL_CONFIG, 'widthRatio', 0.1, 1, 0.01).onChange(relayoutLabels)
+labelFolder.add(LABEL_CONFIG, 'heightRatio', 0.1, 1, 0.01).onChange(relayoutLabels)
+labelFolder.add(LABEL_CONFIG, 'spin', -Math.PI, Math.PI, Math.PI / 2).onChange(relayoutLabels)
+labelFolder.add(LABEL_CONFIG, 'flip').onChange(relayoutLabels)
 
 
 // Renderer
@@ -306,7 +465,7 @@ const tick = () =>
         if(!paused)
         {
             mixer.update(deltaTime)
-            if (robotPickupAnimation && floppy && movingFloppy && insertedFloppy)
+            if (robotPickupAnimation && floppy && movingFloppy && insertedFloppy && animationPlaying)
             {
                 const time = robotPickupAnimation.time
 
