@@ -1,12 +1,19 @@
 CREDITS
 =======
 
-Art, models, and other resources used on this website.
+Asset: Robot Arm
+Creator: MK Graphics
+Source URL: https://www.youtube.com/watch?v=QqOShvk4Ne8
+Changes made: Added animation, rigging and colour
 
-Add attributions here using:
-
-Asset:
-Creator:
+Asset: Floppy Disc
+Creator: 
 Source URL:
-License:
 Changes made:
+
+Asset: CRT style for monitor
+Creator: Alec Lownes
+Source URL: https://aleclownes.com/2017/02/01/crt-display.html
+Changes made: styling changes
+
+Note: All other work was done by me (Redha) with help from vscode copilot

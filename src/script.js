@@ -434,6 +434,9 @@ gltfLoader.load(
 
 const gui = new GUI()
 
+//hide GUI by default
+gui.hide()
+
 const editFloppySpacing = (spacing) => {
             selection_floppies.forEach((floppy, index) => {
                 floppy.userData.idle.baseX = index * spacing + floppy.userData.idle.pivotX
