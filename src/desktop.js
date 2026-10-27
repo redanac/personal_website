@@ -22,16 +22,21 @@ const clampToLayer = (icon, left, top) => {
 
 // the layer is display:none on narrow screens, where sizes read as 0 and clamping would stack every icon at 0,0
 const iconsVisible = () => getComputedStyle(iconLayer).display !== 'none'
-let iconsLaidOut = false
-
 const layoutIcons = () => {
-    if (iconsLaidOut || !iconsVisible()) return
-    iconsLaidOut = true
-    const perColumn = Math.max(1, Math.floor((window.innerHeight - ICON_MARGIN * 2) / ICON_SPACING))
+    if (!iconsVisible()) return
+    const pageLeft = document.querySelector('.page').getBoundingClientRect().left
+    const columnSpacing = ICON_SPACING * 1.1
+    const availableColumns = Math.max(1, Math.floor((pageLeft - ICON_MARGIN) / columnSpacing))
+    // Let icons extend down the scrollable desktop rather than overlap the content.
+    const perColumn = Math.max(
+        1,
+        Math.floor((window.innerHeight - ICON_MARGIN * 2) / ICON_SPACING),
+        Math.ceil(icons.length / availableColumns)
+    )
     icons.forEach((icon, index) => {
         const column = Math.floor(index / perColumn)
         const row = index % perColumn
-        clampToLayer(icon, ICON_MARGIN + column * ICON_SPACING * 1.1, ICON_MARGIN + row * ICON_SPACING)
+        clampToLayer(icon, ICON_MARGIN + column * columnSpacing, ICON_MARGIN + row * ICON_SPACING)
     })
 }
 
@@ -73,12 +78,7 @@ icons.forEach((icon) => {
 })
 
 window.addEventListener('resize', () => {
-    if (!iconsVisible()) return
-    if (!iconsLaidOut) {
-        layoutIcons()
-        return
-    }
-    icons.forEach((icon) => clampToLayer(icon, parseFloat(icon.style.left), parseFloat(icon.style.top)))
+    layoutIcons()
 })
 
 /**
@@ -95,6 +95,10 @@ const setOffset = (win, x, y) => {
     win.dataset.dy = y
     win.style.transform = `translate(${x}px, ${y}px)`
 }
+
+window.addEventListener('resize', () => {
+    document.querySelectorAll('[data-drag]').forEach((win) => setOffset(win, 0, 0))
+})
 
 // delegated because the monitor's window is recreated each time a floppy loads
 document.addEventListener('pointerdown', (event) => {

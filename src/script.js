@@ -10,6 +10,7 @@ var paused = false
 const PICK_UP_TIME = 2.335
 const INSERT_TIME = 6.639
 const SELECTION_FLOPPY_SPACING = 2.5
+const SELECTION_FLOPPY_X_OFFSET = 1
 const SELECTION_FLOPPY_Y_OFFSET = 7
 
 const IDLE_CONFIG = {
@@ -22,7 +23,7 @@ const IDLE_CONFIG = {
 
 const HOVER_CONFIG = {
     duration: 0.5,
-    focusDistance: 2,
+    focusDistance: 1.5,
     spins: 1
 }
 
@@ -51,43 +52,15 @@ Object.values(FLOPPY_OPTIONS).forEach((option) => {
     })
 })
 
-// get the screen height of the device not the window
-const screenHeight = window.screen.height
-
-const canvasHeight = screenHeight / 2.0
 const insertedFloppyPosition = new THREE.Vector3(6.19,-1.12,6)
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
-const canvasContainer = canvas.parentElement
-
-// clientWidth includes padding, so subtract it to match the monitor's width exactly
-const contentWidth = () => {
-    const style = getComputedStyle(canvasContainer)
-    return canvasContainer.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
-}
-
-// width follows the centred content column, height fixed to half the screen height
-const sizes = {
-    width: contentWidth(), 
-    height: canvasHeight}
-
-window.addEventListener('resize', () => {
-    // Update sizes
-    sizes.width = contentWidth()
-    sizes.height = canvasHeight
-
-    camera.aspect = sizes.width /sizes.height
-    camera.updateProjectionMatrix()
-
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
 
 // Set up theejs scene
 const scene = new THREE.Scene()
 
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
+const camera = new THREE.PerspectiveCamera(75, 1)
 scene.add(camera)
 
 
@@ -122,7 +95,7 @@ scene.add(cube)
 const insertHoleGeometry = new THREE.BoxGeometry(2.0, 0.1, 0.2)
 const insertHoleMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 })
 const insertHole = new THREE.Mesh(insertHoleGeometry, insertHoleMaterial)
-insertHole.position.set(0, 0, 6)
+insertHole.position.set(0, 0, 6.04)
 scene.add(insertHole)
 
 var floppy = null
@@ -354,7 +327,7 @@ gltfLoader.load(
         Object.entries(FLOPPY_OPTIONS).forEach(([optionKey, option], index) => {
             const floppyOption = floppy.clone()
             floppyOption.position.y = SELECTION_FLOPPY_Y_OFFSET
-            floppyOption.position.x = index * SELECTION_FLOPPY_SPACING 
+            floppyOption.position.x = SELECTION_FLOPPY_X_OFFSET + index * SELECTION_FLOPPY_SPACING 
             floppyOption.name = option.name
             floppyOption.userData.optionKey = optionKey
 
@@ -510,7 +483,27 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas
 })
 
-renderer.setSize(sizes.width, sizes.height)
+const resizeCanvas = () => {
+    const width = canvas.clientWidth
+    const height = canvas.clientHeight
+    if (!width || !height) return
+
+    camera.aspect = width / height
+    // Keep the desktop's horizontal field of view so the floppy row is not cropped on narrow screens.
+    const referenceAspect = 960 / 360
+    camera.fov = THREE.MathUtils.radToDeg(
+        2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(75 / 2)) * Math.max(1, referenceAspect / camera.aspect))
+    )
+    camera.updateProjectionMatrix()
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setSize(width, height, false)
+}
+
+const canvasObserver = new ResizeObserver(resizeCanvas)
+canvasObserver.observe(canvas)
+window.addEventListener('resize', resizeCanvas)
+resizeCanvas()
 // dark grey background
 renderer.setClearColor('#111814')
 
@@ -866,5 +859,4 @@ const tick = () =>
 }
 
 tick()
-
 

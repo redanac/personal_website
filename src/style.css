@@ -25,9 +25,11 @@ body {
 }
 
 .page {
-    max-width: 960px;
+    box-sizing: border-box;
+    width: calc(100% - 208px);
+    max-width: 852px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: clamp(0.75rem, 3vw, 2rem) clamp(0.5rem, 2vw, 1rem);
 }
 
 /* Desktop icons */
@@ -40,8 +42,11 @@ body {
     pointer-events: none;
 }
 
-/* only where there's room beside the centred column */
-@media (max-width: 1200px) {
+@media (max-width: 599px) {
+    .page {
+        width: 100%;
+    }
+
     .desktop-icons {
         display: none;
     }
@@ -176,7 +181,8 @@ body {
 .terminal {
     background: var(--terminal-bg);
     color: var(--terminal-fg);
-    padding: 1rem 1.25rem;
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(0.75rem, 2.5vw, 1.25rem);
+    overflow-wrap: anywhere;
 }
 
 h1 {
@@ -200,10 +206,12 @@ h1 {
     }
 }
 
-/* renderer.setSize sets the pixel size inline */
+/* CSS controls layout; the renderer follows the canvas content size. */
 canvas.webgl {
     display: block;
-    max-width: 100%;
+    width: 100%;
+    height: clamp(220px, 40vh, 440px);
+    height: clamp(220px, 40svh, 440px);
     border: 2px solid #000;
     border-bottom: none;
     box-sizing: border-box;
@@ -217,7 +225,7 @@ canvas.webgl {
 
 .monitor-bezel {
     background: var(--beige);
-    padding: 24px 24px 12px;
+    padding: clamp(8px, 2.5vw, 24px) clamp(8px, 2.5vw, 24px) 12px;
     border: 2px solid #000;
     border-top: none;
     border-radius: 0 0 18px 18px;
@@ -225,7 +233,8 @@ canvas.webgl {
 
 .monitor-screen {
     position: relative;
-    min-height: 600px;
+    height: clamp(320px, 65vh, 600px);
+    height: clamp(320px, 65svh, 600px);
     background: #050805;
     border-radius: 16px;
     overflow: hidden;
@@ -234,7 +243,7 @@ canvas.webgl {
 .screen-content {
     position: absolute;
     inset: 0;
-    padding: 2rem;
+    padding: clamp(0.5rem, 3vw, 2rem);
     background: var(--desktop);
     overflow: hidden;
     opacity: 0;
@@ -243,10 +252,11 @@ canvas.webgl {
 /* smaller than the screen so there's room to drag it around */
 .screen-window {
     position: absolute;
-    top: 2rem;
-    left: 2rem;
-    width: calc(100% - 8rem);
-    height: calc(100% - 8rem);
+    --window-inset: clamp(0.5rem, 3vw, 2rem);
+    top: var(--window-inset);
+    left: var(--window-inset);
+    width: calc(100% - 4 * var(--window-inset));
+    height: calc(100% - 4 * var(--window-inset));
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -255,6 +265,7 @@ canvas.webgl {
 
 .screen-window .window-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -511,4 +522,3 @@ canvas.webgl {
 .crt {
   animation: textShadow 1.6s infinite;
 }
-
