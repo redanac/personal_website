@@ -324,6 +324,33 @@ canvas.webgl {
     color: var(--accent);
 }
 
+.profile-intro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.profile-portrait {
+    width: 144px;
+    max-width: 100%;
+    height: auto;
+    padding: 4px;
+    box-sizing: border-box;
+    background: var(--face);
+    box-shadow: var(--bevel-out);
+    image-rendering: pixelated;
+}
+
+.profile-summary {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.profile-summary p:first-child {
+    margin-top: 0;
+}
+
 .monitor-screen.is-on .screen-content {
     opacity: 1;
 }

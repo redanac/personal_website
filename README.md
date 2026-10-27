@@ -14,6 +14,13 @@ uses the full width.
 
 Run `npm run dev` for local development or `npm run build` for a production build.
 
+## Profile portrait
+
+The personal profile screen uses `static/portrait.png`. The browser downsamples
+it to 72 pixels wide, then CSS scales it up with `image-rendering: pixelated`
+for a retro portrait. The original image is left unchanged, and the portrait
+stacks above the introduction when the screen window is narrow.
+
 ## Credits
 
 Click the `credits.txt` desktop icon to open a draggable Notepad-style window

@@ -682,6 +682,19 @@ const buildScreenWindow = (option, html) => {
     body.className = 'window-body terminal'
     body.innerHTML = html
 
+    const portrait = body.querySelector('.profile-portrait')
+    if (portrait) {
+        portrait.addEventListener('load', () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = 64
+            canvas.height = Math.round(canvas.width * portrait.naturalHeight / portrait.naturalWidth)
+            const context = canvas.getContext('2d')
+            if (!context) throw new Error('Unable to create the pixelated portrait')
+            context.drawImage(portrait, 0, 0, canvas.width, canvas.height)
+            portrait.src = canvas.toDataURL('image/png')
+        }, { once: true })
+    }
+
     win.append(titleBar, body)
     return win
 }
@@ -862,4 +875,3 @@ const tick = () =>
 }
 
 tick()
-
