@@ -19,6 +19,7 @@
         <button class="desktop-icon" type="button"><img src="/icons/boom.svg" alt=""><span>BOOM</span></button>
         <button class="desktop-icon" type="button"><img src="/icons/ros2.svg" alt=""><span>ROS 2</span></button>
         <button class="desktop-icon" type="button"><img src="/icons/bin.svg" alt=""><span>Bin</span></button>
+        <button class="desktop-icon" id="credits-icon" type="button" aria-haspopup="dialog" aria-controls="credits-window"><img src="/icons/text-file.svg" alt=""><span>credits.txt</span></button>
     </nav>
     <main class="page">
         <section class="window" data-drag="page">
@@ -49,6 +50,15 @@
             </div>
         </section>
     </main>
+    <dialog class="window credits-window" id="credits-window" data-drag="overlay" aria-labelledby="credits-title">
+        <div class="title-bar">
+            <span class="title-bar-text" id="credits-title">credits.txt - Notepad</span>
+            <div class="title-bar-controls">
+                <button type="button" id="credits-close" aria-label="Close credits">&times;</button>
+            </div>
+        </div>
+        <pre class="window-body credits-content" id="credits-content"></pre>
+    </dialog>
     <script type="module" src="./script.js"></script>
     <script type="module" src="./desktop.js"></script>
 </body>

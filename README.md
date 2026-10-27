@@ -13,3 +13,10 @@ resize to avoid the content column. Below 600px, icons are hidden and the conten
 uses the full width.
 
 Run `npm run dev` for local development or `npm run build` for a production build.
+
+## Credits
+
+Click the `credits.txt` desktop icon to open a draggable Notepad-style window
+above the page. Close it with its X button or Escape. Edit `src/credits.txt` to
+add asset names, creators, source links, licenses, and any modifications.
+The icon follows the desktop's visibility rules (600px and wider).

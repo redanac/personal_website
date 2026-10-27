@@ -1,3 +1,5 @@
+import creditsText from './credits.txt?raw'
+
 const ICON_MARGIN = 16
 const ICON_SPACING = 80
 // movement before a press counts as a drag rather than a click
@@ -14,6 +16,15 @@ const isOverNoDropZone = (element) => {
         return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
     })
 }
+
+const creditsWindow = document.getElementById('credits-window')
+document.getElementById('credits-content').textContent = creditsText
+document.getElementById('credits-icon').addEventListener('dblclick', () => {
+    if (creditsWindow.open) return
+    setOffset(creditsWindow, 0, 0)
+    creditsWindow.showModal()
+})
+document.getElementById('credits-close').addEventListener('click', () => creditsWindow.close())
 
 const clampToLayer = (icon, left, top) => {
     icon.style.left = `${Math.min(Math.max(0, left), iconLayer.clientWidth - icon.offsetWidth)}px`
@@ -44,9 +55,11 @@ layoutIcons()
 
 icons.forEach((icon) => {
     let drag = null
+    let dragged = false
 
     icon.addEventListener('pointerdown', (event) => {
         if (event.button !== 0) return
+        dragged = false
         icon.focus()
         icon.setPointerCapture(event.pointerId)
         drag = { x: event.clientX, y: event.clientY, left: parseFloat(icon.style.left), top: parseFloat(icon.style.top), moved: false }
@@ -58,6 +71,7 @@ icons.forEach((icon) => {
         const dy = event.clientY - drag.y
         if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return
         drag.moved = true
+        dragged = true
         icon.classList.add('dragging')
         clampToLayer(icon, drag.left + dx, drag.top + dy)
         icon.classList.toggle('blocked', isOverNoDropZone(icon))
@@ -75,6 +89,12 @@ icons.forEach((icon) => {
     }
     icon.addEventListener('pointerup', endDrag)
     icon.addEventListener('pointercancel', endDrag)
+    icon.addEventListener('click', (event) => {
+        if (dragged && event.detail !== 0) {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+        }
+    })
 })
 
 window.addEventListener('resize', () => {
@@ -83,7 +103,7 @@ window.addEventListener('resize', () => {
 
 /**
  * Windows: dragged by the title bar using a transform, so they keep their space in the page layout.
- * data-drag="page": anywhere in the viewport except the canvas/monitor. data-drag="screen": inside its parent.
+ * data-drag="page": viewport except the canvas/monitor; "overlay": viewport; "screen": inside its parent.
  */
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
@@ -104,15 +124,16 @@ window.addEventListener('resize', () => {
 document.addEventListener('pointerdown', (event) => {
     const handle = event.target.closest('.title-bar')
     const win = handle && handle.closest('[data-drag]')
-    if (!win || event.button !== 0) return
+    if (!win || event.button !== 0 || event.target.closest('button')) return
 
     event.preventDefault()
     handle.setPointerCapture(event.pointerId)
 
     const isPage = win.dataset.drag === 'page'
+    const isViewport = isPage || win.dataset.drag === 'overlay'
     const start = getOffset(win)
     const startRect = win.getBoundingClientRect()
-    const bounds = isPage
+    const bounds = isViewport
         ? { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }
         : win.parentElement.getBoundingClientRect()
 
@@ -138,4 +159,5 @@ document.addEventListener('pointerdown', (event) => {
     handle.addEventListener('pointermove', move)
     handle.addEventListener('pointerup', end)
     handle.addEventListener('pointercancel', end)
+    handle.addEventListener('lostpointercapture', end, { once: true })
 })

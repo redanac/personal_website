@@ -158,7 +158,8 @@ body {
     flex-shrink: 0;
 }
 
-.title-bar-controls span {
+.title-bar-controls span,
+.title-bar-controls button {
     display: grid;
     place-items: center;
     width: 16px;
@@ -168,6 +169,51 @@ body {
     font-size: 0.7rem;
     line-height: 1;
     box-shadow: var(--bevel-out);
+}
+
+.title-bar-controls button {
+    border: 0;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.title-bar-controls button:focus-visible {
+    outline: 1px dotted #000;
+    outline-offset: -3px;
+}
+
+.credits-window {
+    position: fixed;
+    inset: 0;
+    box-sizing: border-box;
+    width: min(560px, calc(100% - 24px));
+    max-width: none;
+    max-height: calc(100dvh - 24px);
+    margin: auto;
+    border: 0;
+    color: #000;
+}
+
+.credits-window[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.credits-window::backdrop {
+    background: transparent;
+}
+
+.credits-content {
+    min-height: 0;
+    margin-bottom: 0;
+    padding: 1rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: #fff;
+    font: inherit;
+    line-height: 1.6;
 }
 
 .title-bar-controls span:last-child {

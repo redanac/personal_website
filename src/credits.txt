@@ -1,0 +1,12 @@
+CREDITS
+=======
+
+Art, models, and other resources used on this website.
+
+Add attributions here using:
+
+Asset:
+Creator:
+Source URL:
+License:
+Changes made:
