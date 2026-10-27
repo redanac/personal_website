@@ -265,7 +265,7 @@ const gltfLoader = new GLTFLoader()
 gltfLoader.setMeshoptDecoder(MeshoptDecoder)
 
 gltfLoader.load(
-    '/models/robot_arm/robot_arm.glb',
+    `${import.meta.env.BASE_URL}models/robot_arm/robot_arm.glb`,
     (gltf) => 
     {
         robotArm = gltf.scene
@@ -295,7 +295,7 @@ gltfLoader.load(
 )
 
 gltfLoader.load(
-    '/models/floppy/floppy.glb',
+    `${import.meta.env.BASE_URL}models/floppy/floppy.glb`,
     (gltf) => 
     {
         floppy = gltf.scene

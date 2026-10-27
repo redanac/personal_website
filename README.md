@@ -10,3 +10,27 @@ This repo is a personal website showing some information about myself. It's buil
 ## How to run locally
 To run this repo locally simply clone the repo and run `npm install` followed by `npm run dev`
 
+## GitHub Pages deployment
+
+The site is deployed to https://redanac.github.io/personal_website/ by
+[the deployment workflow](.github/workflows/deploy.yml) on every push to `main`.
+The workflow can also be started manually from the repository's Actions tab.
+
+1. In the GitHub repository, open **Settings > Pages** and set the source to
+   **GitHub Actions**.
+2. Commit and push the website changes to `main`.
+3. Check the **Deploy Vite website** workflow in the Actions tab. Once it
+   succeeds, open the site URL above.
+
+To check the production build locally, run `npm run build`, then
+`npx vite preview --host 127.0.0.1`. Open the printed URL with the
+`/personal_website/` path. The generated `dist/` directory is ignored by Git;
+GitHub Actions builds and uploads it automatically.
+
+The Vite `base` setting matches the repository name. JavaScript model URLs use
+`import.meta.env.BASE_URL`, and the profile portrait uses a page-relative URL
+because the screen HTML is loaded as raw text.
+
+Everything in `static/` is published, including the CV PDF and TeX source.
+Review those files before deploying if they contain anything you do not want
+to make public.
