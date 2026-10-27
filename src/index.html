@@ -73,12 +73,14 @@
     </dialog>
     <dialog class="window settings-window" id="settings-window" data-drag="overlay" aria-labelledby="settings-title">
         <div class="title-bar">
-            <span class="title-bar-text" id="settings-title">Settings - Robot Animation</span>
+            <span class="title-bar-text" id="settings-title">Settings - Controls and Animation</span>
             <div class="title-bar-controls">
                 <button type="button" id="settings-close" aria-label="Close settings">&times;</button>
             </div>
         </div>
         <div class="window-body settings-content">
+            <label class="settings-toggle"><input type="checkbox" id="touch-controls-toggle" aria-describedby="touch-controls-help"> Touchscreen controls</label>
+            <p id="touch-controls-help">Show larger controls and the Settings, Credits, and section buttons. Detected automatically; you can override this for the current page visit if your browser hides touch support.</p>
             <label class="settings-toggle"><input type="checkbox" id="skip-robot" aria-describedby="skip-robot-help"> Skip robot animation</label>
             <p id="skip-robot-help">Applies to the next disc selection. The disc moves above the slot, then slides straight in. Your device's reduced-motion setting also skips the robot, with near-instant insertion.</p>
             <fieldset id="robot-speed-controls">

@@ -354,45 +354,43 @@ body {
     display: none;
 }
 
-@media (any-pointer: coarse) {
-    .utility-toolbar,
-    .section-selector {
-        display: flex;
-    }
+:root.touch-controls .utility-toolbar,
+:root.touch-controls .section-selector {
+    display: flex;
+}
 
-    .selection-status {
-        position: static;
-        width: auto;
-        height: auto;
-        margin: 1em 0;
-        overflow: visible;
-        clip-path: none;
-        white-space: normal;
-    }
+:root.touch-controls .selection-status {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 1em 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+}
 
-    .mouse-instructions {
-        display: none;
-    }
+:root.touch-controls .mouse-instructions {
+    display: none;
+}
 
-    .touch-instructions {
-        display: inline;
-    }
+:root.touch-controls .touch-instructions {
+    display: inline;
+}
 
-    .title-bar-controls button {
-        width: 44px;
-        height: 44px;
-        font-size: 1rem;
-    }
+:root.touch-controls .title-bar-controls button {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+}
 
-    .settings-toggle,
-    .settings-content input[type="range"] {
-        min-height: 44px;
-    }
+:root.touch-controls .settings-toggle,
+:root.touch-controls .settings-content input[type="range"] {
+    min-height: 44px;
+}
 
-    .terminal a {
-        display: inline-block;
-        padding-block: 12px;
-    }
+:root.touch-controls .terminal a {
+    display: inline-block;
+    padding-block: 12px;
 }
 
 @media (max-width: 599px) {

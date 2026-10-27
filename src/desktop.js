@@ -1,4 +1,13 @@
 import creditsText from './credits.txt?raw'
+import { setupTouchControls } from './touch-controls.mjs'
+
+setupTouchControls(
+    document.documentElement,
+    window.matchMedia('(any-pointer: coarse)'),
+    navigator.maxTouchPoints,
+    document,
+    document.getElementById('touch-controls-toggle')
+)
 
 const ICON_MARGIN = 16
 const ICON_SPACING = 80
