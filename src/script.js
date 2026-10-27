@@ -12,6 +12,14 @@ const INSERT_TIME = 6.639
 const SELECTION_FLOPPY_SPACING = 2.5
 const SELECTION_FLOPPY_Y_OFFSET = 7
 
+const IDLE_CONFIG = {
+    bobAmplitude: 0.01,
+    bobSpeed: 1.75,
+    swayAmplitude: 0.01,
+    tiltAmplitude: 0.02,
+    speedJitter: 0.25
+}
+
 var FLOPPY_OPTIONS = {
     'PERSONAL_PROFILE': {name: 'Personal Profile', colour: '#ff0000'},
     'WORK_EXPERIENCE': {name: 'Work Experience', colour: '#00ff00'},
@@ -303,6 +311,15 @@ gltfLoader.load(
             floppyOption.position.y = SELECTION_FLOPPY_Y_OFFSET
             floppyOption.position.x = index * SELECTION_FLOPPY_SPACING 
             floppyOption.name = option.name
+            // plain numbers because userData is JSON-copied on clone()
+            floppyOption.userData.idle = {
+                baseY: floppyOption.position.y,
+                baseRotX: floppyOption.rotation.x,
+                baseRotY: floppyOption.rotation.y,
+                baseRotZ: floppyOption.rotation.z,
+                phase: Math.random() * Math.PI * 2,
+                speed: 1 + (Math.random() - 0.5) * IDLE_CONFIG.speedJitter
+            }
             // change floppy colour to option colour
             // floppyOption.traverse((child) => {
             //     if (child.isMesh && !child.userData.isLabel) {
@@ -327,7 +344,7 @@ gltfLoader.load(
             const firstSelectionFloppy = selection_floppies[0]
             const selectionFloppyFolder = gui.addFolder('Selection Floppy')
             selectionFloppyFolder.add(firstSelectionFloppy.position, 'x', -10, 10)
-            selectionFloppyFolder.add(firstSelectionFloppy.position, 'y', -10, 10)
+            selectionFloppyFolder.add(firstSelectionFloppy.userData.idle, 'baseY', -10, 10).name('y')
             selectionFloppyFolder.add(firstSelectionFloppy.position, 'z', -10, 10)
             selectionFloppyFolder.add({spacing: SELECTION_FLOPPY_SPACING}, 'spacing', 0, 10).onChange(editFloppySpacing)
         }
@@ -385,6 +402,12 @@ animationFolder.add(
     'label',
     Object.values(FLOPPY_OPTIONS).map((option) => option.name)
 ).onChange(setChosenLabel)
+
+const idleFolder = gui.addFolder('Idle')
+idleFolder.add(IDLE_CONFIG, 'bobAmplitude', 0, 1, 0.01)
+idleFolder.add(IDLE_CONFIG, 'bobSpeed', 0, 5, 0.01)
+idleFolder.add(IDLE_CONFIG, 'swayAmplitude', 0, 1, 0.01)
+idleFolder.add(IDLE_CONFIG, 'tiltAmplitude', 0, 0.5, 0.01)
 
 const relayoutLabels = () => labels.forEach(layoutLabel)
 const labelFolder = gui.addFolder('Label')
@@ -453,6 +476,18 @@ const pauseAnimation = () =>
 }
 
 
+const updateIdleFloppies = (elapsedTime) =>
+{
+    selection_floppies.forEach((selectionFloppy) => {
+        const idle = selectionFloppy.userData.idle
+        const t = elapsedTime * idle.speed + idle.phase
+        selectionFloppy.position.y = idle.baseY + Math.sin(t * IDLE_CONFIG.bobSpeed) * IDLE_CONFIG.bobAmplitude
+        // different frequencies so bob, sway and tilt never line up
+        selectionFloppy.rotation.y = idle.baseRotY + Math.sin(t * 0.7) * IDLE_CONFIG.swayAmplitude
+        selectionFloppy.rotation.z = idle.baseRotZ + Math.sin(t * 0.9 + 1) * IDLE_CONFIG.tiltAmplitude
+    })
+}
+
 const tick = () =>
 {
 
@@ -475,6 +510,8 @@ const tick = () =>
             }
         }
     }
+
+    updateIdleFloppies(elapsedTime)
 
     // Render
     renderer.render(scene, camera)
