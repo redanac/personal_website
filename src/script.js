@@ -430,6 +430,8 @@ gltfLoader.load(
         basePose = { position: visualCentre(floppy), rotY: floppy.rotation.y, rotZ: floppy.rotation.z }
         // insertedFloppy's inner mesh is turned PI, so the selection floppy needs the same turn
         insertPose = { position: visualCentre(insertedFloppy), rotY: insertedFloppy.rotation.y + Math.PI, rotZ: insertedFloppy.rotation.z }
+
+        loadDefaultSelection('PERSONAL_PROFILE')
         
         // var outlineMaterial = new THREE.MeshBasicMaterial({ color: 'red', side: THREE.BackSide })
         // var outlineMesh = new THREE.Mesh(floppy.children[0].geometry, outlineMaterial)
@@ -734,6 +736,19 @@ const beginSelecting = (selectionFloppy) => {
         monitorPendingOption = FLOPPY_OPTIONS[selectionFloppy.userData.optionKey]
         playAnimation()
     })
+}
+
+// the page opens with this floppy already in the drive, skipping the robot animation
+const loadDefaultSelection = (optionKey) => {
+    const selectionFloppy = selection_floppies.find((f) => f.userData.optionKey === optionKey)
+    if (!selectionFloppy) return
+
+    setChosenLabel(selectionFloppy.name)
+    selectionFloppy.visible = false
+    selectionFloppy.userData.select.state = 'hidden'
+    selectedFloppy = selectionFloppy
+    insertedFloppy.visible = true
+    monitorOn(FLOPPY_OPTIONS[optionKey])
 }
 
 const selectFloppy = (next) => {
