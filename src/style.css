@@ -65,7 +65,7 @@ body {
     color: #fff;
     font: inherit;
     font-size: 0.7rem;
-    cursor: url('/cursors/arrow.svg') 1 1, default;
+    cursor: url('/cursors/arrow.svg') 2 2, default;
     pointer-events: auto;
     touch-action: pan-y pinch-zoom;
     user-select: none;
@@ -128,7 +128,7 @@ body {
 }
 
 [data-drag] > .title-bar {
-    cursor: url('/cursors/arrow.svg') 1 1, default;
+    cursor: url('/cursors/arrow.svg') 2 2, default;
     touch-action: pan-y pinch-zoom;
     user-select: none;
 }
@@ -443,7 +443,7 @@ canvas.webgl {
 /* Monitor */
 
 .monitor {
-    cursor: url('/cursors/arrow.svg') 1 1, default;
+    cursor: url('/cursors/arrow.svg') 2 2, default;
 }
 
 .monitor-bezel {
