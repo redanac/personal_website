@@ -185,7 +185,8 @@ body {
 }
 
 .credits-window,
-.settings-window {
+.settings-window,
+.fallboys-window {
     position: fixed;
     inset: 0;
     box-sizing: border-box;
@@ -198,14 +199,41 @@ body {
 }
 
 .credits-window[open],
-.settings-window[open] {
+.settings-window[open],
+.fallboys-window[open] {
     display: flex;
     flex-direction: column;
 }
 
 .credits-window::backdrop,
-.settings-window::backdrop {
+.settings-window::backdrop,
+.fallboys-window::backdrop {
     background: transparent;
+}
+
+.fallboys-window {
+    width: min(960px, calc(100% - 24px));
+    height: min(600px, calc(100dvh - 24px));
+    overflow: hidden;
+}
+
+.fallboys-window > .title-bar {
+    flex-shrink: 0;
+}
+
+.fallboys-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+.fallboys-content iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
 .credits-content {

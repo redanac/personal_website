@@ -42,7 +42,30 @@ const openSettings = () => {
     settingsWindow.showModal()
 }
 document.getElementById('settings-close').addEventListener('click', () => settingsWindow.close())
-;[['credits', openCredits], ['settings', openSettings]].forEach(([name, open]) => {
+
+const fallboysWindow = document.getElementById('fallboys-window')
+const fallboysContent = document.getElementById('fallboys-content')
+const fallboysIcon = document.getElementById('fallboys-icon')
+const openFallboys = () => {
+    if (fallboysWindow.open) return
+    setOffset(fallboysWindow, 0, 0)
+    fallboysWindow.showModal()
+    const frame = document.createElement('iframe')
+    frame.title = 'Jump Guys game'
+    frame.src = `${import.meta.env.BASE_URL}fallboys_export/index.html`
+    frame.addEventListener('load', () => {
+        if (fallboysWindow.open && frame.isConnected) frame.focus()
+    }, { once: true })
+    fallboysContent.replaceChildren(frame)
+}
+document.getElementById('fallboys-close').addEventListener('click', () => fallboysWindow.close())
+fallboysWindow.addEventListener('close', () => {
+    if (fallboysWindow.open) return
+    fallboysContent.replaceChildren()
+    if (fallboysIcon.getClientRects().length) fallboysIcon.focus()
+})
+
+;[['credits', openCredits], ['settings', openSettings], ['fallboys', openFallboys]].forEach(([name, open]) => {
     const icon = document.getElementById(`${name}-icon`)
     let pointerType = 'mouse'
     icon.addEventListener('pointerdown', (event) => { pointerType = event.pointerType })
@@ -51,7 +74,7 @@ document.getElementById('settings-close').addEventListener('click', () => settin
         if (event.defaultPrevented) return
         if (event.detail === 0 || (event.pointerType || pointerType) !== 'mouse') open()
     })
-    document.getElementById(`${name}-launch`).addEventListener('click', open)
+    document.getElementById(`${name}-launch`)?.addEventListener('click', open)
 })
 
 const clampToLayer = (icon, left, top) => {

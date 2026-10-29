@@ -21,6 +21,7 @@
         <button class="desktop-icon" type="button"><img src="/icons/ros2.svg" alt=""><span>ROS 2</span></button>
         <button class="desktop-icon" type="button"><img src="/icons/bin.svg" alt=""><span>Bin</span></button>
         <button class="desktop-icon" id="credits-icon" type="button" aria-haspopup="dialog" aria-controls="credits-window"><img src="/icons/text-file.svg" alt=""><span>credits.txt</span></button>
+        <button class="desktop-icon" id="fallboys-icon" type="button" aria-haspopup="dialog" aria-controls="fallboys-window"><img src="/fallboys_export/favicon.png" alt=""><span>Jump Guys</span></button>
     </nav>
     <main class="page">
         <section class="window" data-drag="page">
@@ -33,11 +34,14 @@
             <div class="window-body terminal">
                 <h1>Redha Nacef's Personal Website</h1>
                 <p class="instructions">
-                    <span class="mouse-instructions">C:\REDHA&gt; Hover over a floppy disk to take a closer look. Click one to load it.</span>
-                    <span class="touch-instructions">C:\REDHA&gt; Tap a floppy disk or a section button to load it.</span><br>
-                    <span class="mouse-instructions">C:\REDHA&gt; Double-click credits.txt to view the credits.</span>
-                    <span class="touch-instructions">C:\REDHA&gt; Use the Settings or Credits buttons below.</span><br>
-                    <span class="mouse-instructions">C:\REDHA&gt; Or go to the settings to adjust the robot animation speed.</span>
+                    <span class="mouse-instructions">C:\REDHA&gt; [INFO] Hover over a floppy disk to take a closer look. Click one to load it.</span>
+                    <span class="touch-instructions">C:\REDHA&gt; [INFO] Tap a floppy disk or a section button to load it.</span><br>
+                    <span class="mouse-instructions">C:\REDHA&gt; [INFO] Double-click credits.txt to view the credits.</span>
+                    <span class="touch-instructions">C:\REDHA&gt; [INFO] Use the Settings or Credits buttons below.</span><br>
+                    <span class="mouse-instructions">C:\REDHA&gt; [INFO] Or go to the settings to adjust the robot animation speed.</span>
+                    <span class="mouse-instructions">C:\REDHA&gt; [INFO] Or go to the settings to adjust the robot animation speed.</span>
+                    <span class="mouse-instructions">C:\REDHA&gt; </span>
+                    <span style="color: rgb(128, 90, 0);" class="mouse-instructions">[HINT] Try clicking on the other icons, you never know what you might find... ;)</span>
                     <span class="cursor">_</span>
                 </p>
             </div>
@@ -90,6 +94,15 @@
                 <div class="settings-speed-labels" aria-hidden="true"><span>0.5×</span><span>5×</span></div>
             </fieldset>
         </div>
+    </dialog>
+    <dialog class="window fallboys-window" id="fallboys-window" data-drag="overlay" aria-labelledby="fallboys-title">
+        <div class="title-bar">
+            <span class="title-bar-text" id="fallboys-title">Jump Guys</span>
+            <div class="title-bar-controls">
+                <button type="button" id="fallboys-close" aria-label="Close Jump Guys">&times;</button>
+            </div>
+        </div>
+        <div class="window-body fallboys-content" id="fallboys-content"></div>
     </dialog>
     <script type="module" src="./script.js"></script>
     <script type="module" src="./desktop.js"></script>
