@@ -544,7 +544,7 @@ canvasObserver.observe(canvas)
 window.addEventListener('resize', resizeCanvas)
 resizeCanvas()
 // dark grey background
-renderer.setClearColor('#111814')
+renderer.setClearColor('#005757')
 
 
 // render
